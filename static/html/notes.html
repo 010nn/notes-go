@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>notes</title>
+    <link rel="stylesheet" href="static/css/style.css" />
+    <link
+      rel="icon"
+      href="https://img.icons8.com/?size=100&id=12581&format=png&color=000000"
+    />
+  </head>
+  <body>
+    <div id="app-block">
+      <div id="notes-block">
+        <div id="notes-sidebar">
+          <div id="notes-header">
+            <span>hi, <span id="username-display"></span>!</span>
+            <span id="logout" onclick="logout()">log out</span>
+          </div>
+          <div id="sync-status">all changes saved</div>
+          <div id="notes-settings">
+            <div id="notes-list-name">notes</div>
+            <button id="delete-note-btn" onclick="deleteNote()">×</button>
+            <button id="rename-note-btn" onclick="renameNote()">✎</button>
+            <button id="add-note-btn" onclick="addNote()">+</button>
+          </div>
+          <div id="notes-list"></div>
+        </div>
+
+        <textarea
+          id="note-content"
+          placeholder="Type something..."
+          oninput="onNoteChanged()"
+          spellcheck="false"
+        ></textarea>
+      </div>
+    </div>
+
+    <script src="static/js/script.js"></script>
+  </body>
+</html>

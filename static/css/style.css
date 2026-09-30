@@ -1,0 +1,167 @@
+html, body {
+    margin: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: #000;
+    color: #999;
+    font-family: monospace;
+    font-size: 14px;
+    user-select: none;
+}
+
+*::-webkit-scrollbar { display: none; }
+* { scrollbar-width: thin; -ms-overflow-style: none; }
+
+input, button {
+    background: transparent;
+    color: #999;
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+    box-sizing: border-box;
+}
+
+#app-block {
+    height: 100vh;
+}
+
+#notes-block {
+    position: absolute;
+    display: flex;
+    width: 80%;
+    height: 100vh;
+    left: 10%;
+}
+
+#notes-sidebar {
+    width: 200px;
+}
+
+#notes-header {
+    padding: 5px;
+
+    display: flex;
+    justify-content: space-between;
+}
+
+#sync-status {
+    font-size: 0.8em;
+    text-align: end;
+    padding: 5px;
+    margin-top: 5px;
+}
+
+#logout {
+    align-self: end;
+    font-weight: bold;
+}
+
+#logout:hover {
+    text-decoration: underline
+}
+
+#notes-settings {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #333;
+    font-size: 2rem;
+    width: 100%;
+}
+
+#notes-list-name {
+    margin-right: 10px;
+}
+
+#add-note-btn, #rename-note-btn, #delete-note-btn {
+    margin: 0;
+    width: 3rem;
+    height: 3rem;
+    border: 1px solid #333;
+    border-right: none;
+    border-bottom: none;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+#add-note-btn:hover, #rename-note-btn:hover, #delete-note-btn:hover {
+    background: #1a1a1a;
+}
+
+.note-item {
+    margin: 5px 0 5px 5px;
+    padding: 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-start-start-radius: 5px;
+    border-end-start-radius: 5px;
+    word-break: break-word;
+}
+
+.note-item:hover {
+    background: #444;
+}
+
+.note-item.active {
+    background: #1a1a1a;
+}
+
+.note-title-input {
+    border: none;
+    outline: none;
+    margin: 5px 0 5px 5px;
+    padding: 10px;
+}
+
+#note-content {
+    flex: 1;
+    background: transparent;
+    padding: 10px;
+    font-size: 1rem;
+    line-height: 1.15;
+    resize: none;
+    outline: none;
+    user-select: text;
+    color: #999;
+    box-sizing: border-box;
+    border: 2px solid #333;
+    border-top: none;
+    border-bottom: none;
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+    #notes-block {
+        left: 0;
+        width: 100%;
+        flex-direction: column; /* Элементы друг под другом */
+    }
+
+    #notes-sidebar {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #notes-list {
+        display: flex;
+        overflow-x: auto; /* Делаем горизонтальный скролл для заметок */
+        white-space: nowrap;
+        padding-bottom: 5px;
+    }
+
+    .note-item {
+        border-radius: 5px;
+        margin: 5px;
+        flex-shrink: 0; /* Чтобы заметки не сжимались в гармошку */
+    }
+
+    #note-content {
+        border-left: none;
+        border-top: 2px solid #333;
+        flex: 1; /* Занимает все оставшееся место */
+        height: 100%;
+    }
+}

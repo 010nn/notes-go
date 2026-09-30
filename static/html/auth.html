@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>notes</title>
+    <link rel="stylesheet" href="static/css/style.css" />
+    <link
+      rel="icon"
+      href="https://img.icons8.com/?size=100&id=12581&format=png&color=000000"
+    />
+  </head>
+  <body>
+    <h2>Login</h2>
+    <form class="auth-form js-auth-form">
+      <div class="auth-form__input">
+        <label>Username</label>
+        <input class="js-auth-form-username" type="text" name="username" />
+      </div>
+      <div class="auth-form__button">
+        <label>Password</label>
+        <input class="js-auth-form-password" type="password" name="password" />
+      </div>
+
+      <div class="auth-form__sumbit">
+        <button class="js-auth-form-login" type="submit">Login</button>
+        <button class="js-auth-form-register" type="submit">Register</button>
+      </div>
+    </form>
+  </body>
+
+  <script src="static/js/auth.js"></script>
+</html>
+<!--
+
+Как правильнее всего сделать страницу авторизации\регистрации для web приложения на go.
+Frontend держится на статичных файлах html css js.
+Сейчас при отправке формы входа в аккаунт и неверном пароле, страница меняется на текст ошибки
+
+-->
