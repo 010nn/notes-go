@@ -1,7 +1,7 @@
 package transport
 
 import (
-	"fmt"
+	"context"
 	"log"
 	"net/http"
 	"time"
@@ -17,25 +17,31 @@ func NewMiddleware() *Middleware {
 func (m *Middleware) AuthRequired(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		cookie, err := r.Cookie("SUPERTOKEN")
+		cookie, err := r.Cookie("token")
 		if err != nil {
 			// http.Error(w, "invalid token", http.StatusBadRequest)
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
-		log.Printf("token: %s", cookie.Value)
+		token := cookie.Value
 
-		next.ServeHTTP(w, r)
+		claims, err := ParseJWSToken(token)
+		if err != nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		log.Printf("token: %s\tname: %s", token, claims.Username)
+
+		ctx := context.WithValue(r.Context(), "username", claims.Username)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 func (m *Middleware) Logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		fmt.Println()
-		log.Printf("%s %s %s %v", r.Method, r.URL.Path, r.RemoteAddr, time.Since(start))
-		log.Printf("Header: %v", r.Header)
-		fmt.Println()
+		log.Printf("\nLog: %s %s %s %v\n", r.Method, r.URL.Path, r.RemoteAddr, time.Since(start))
 
 		next.ServeHTTP(w, r)
 	})

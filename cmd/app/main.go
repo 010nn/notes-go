@@ -41,6 +41,7 @@ func main() {
 			r.Post("/register", authHandler.Register)
 		})
 
+		// Protected api
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.AuthRequired)
 			r.Get("/note/{id:[0-9]+}", notesHandler.GetNote)

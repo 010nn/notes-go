@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"notes-go/internal/model"
 	"notes-go/internal/service"
+	"notes-go/internal/transport"
 	"time"
 )
 
@@ -33,14 +34,23 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("login user: %s %s\n", auth.Username, auth.Password)
 
-	if _, err := h.service.Login(auth); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	user, err := h.service.Login(auth)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	// Generate JWT token
+	token, err := transport.GenerateJWTAccessToken(user.Username)
+	if err != nil {
+		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		log.Printf("Error: %v", err)
 		return
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     "SUPERTOKEN",
-		Value:    "nice",
+		Name:     "token",
+		Value:    token,
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
 		Secure:   false,
