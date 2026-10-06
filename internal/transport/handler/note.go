@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 )
 
 type NotesHandler struct{}
@@ -19,8 +19,7 @@ func (h *NotesHandler) GetNotes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *NotesHandler) GetNote(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
+	id := chi.URLParam(r, "id")
 	response := fmt.Sprintf("Note %s", id)
 	fmt.Fprint(w, response)
 }

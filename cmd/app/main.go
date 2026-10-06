@@ -10,8 +10,7 @@ import (
 	"notes-go/internal/transport/handler"
 	"time"
 
-	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
+	"github.com/go-chi/chi/v5"
 )
 
 func main() {
@@ -22,39 +21,37 @@ func main() {
 	notesHandler := handler.NewNotesHandler()
 
 	// Auth
-	sessionKey := []byte("super-puper-secret-key-12345")
-	store := sessions.NewCookieStore(sessionKey)
-	store.Options = &sessions.Options{
-		Path:     "/",
-		MaxAge:   3600 * 3, // 3 часа
-		HttpOnly: true,
-		Secure:   false, // Включить, если используется HTTPS
-	}
 	userRepository := repository.NewUsersRepository()
 	userService := service.NewUserService(userRepository)
-	authHandler := handler.NewAuthHandler(userService, store)
+	authHandler := handler.NewAuthHandler(userService)
 
-	middleware := transport.NewMiddleware(store)
+	middleware := transport.NewMiddleware()
 
-	r := mux.NewRouter()
+	r := chi.NewRouter()
 	r.Use(middleware.Logging)
 
-	// Public routing
-	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fileServer))
-	r.HandleFunc("/login", staticHandler.Auth).Methods("GET")
+	// Static files
+	r.Handle("/static/*", http.StripPrefix("/static/", fileServer))
 
-	publicApi := r.PathPrefix("/api").Subrouter()
-	publicApi.HandleFunc("/login", authHandler.Login).Methods("POST")
-	publicApi.HandleFunc("/register", authHandler.Register).Methods("POST")
+	// Public routing
+	r.Get("/login", staticHandler.Auth)
+	r.Route("/api", func(r chi.Router) {
+		r.Route("/auth", func(r chi.Router) {
+			r.Post("/login", authHandler.Login)
+			r.Post("/register", authHandler.Register)
+		})
+
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.AuthRequired)
+			r.Get("/note/{id:[0-9]+}", notesHandler.GetNote)
+		})
+	})
 
 	// Authorizated routing
-	mainPage := r.PathPrefix("/").Subrouter()
-	mainPage.Use(middleware.AuthRequired)
-	mainPage.HandleFunc("/", staticHandler.Notes).Methods("GET")
-
-	privateApi := r.PathPrefix("/api").Subrouter()
-	privateApi.Use(middleware.AuthRequired)
-	privateApi.HandleFunc("/note/{id:[0-9]+}", notesHandler.GetNote).Methods("GET")
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.AuthRequired)
+		r.Get("/", staticHandler.Notes)
+	})
 
 	// Server
 	server := &http.Server{

@@ -31,7 +31,7 @@ async function login(event) {
       throw new Error("Invalid username or password");
    }
 
-   const response = await fetch('/api/login', {
+   const response = await fetch('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(data)
    });
@@ -40,7 +40,7 @@ async function login(event) {
       throw new Error("Login error");
    }
 
-   window.location.href("/")
+   window.location.href = "/"
 }
 
 async function register(event) {
@@ -55,7 +55,7 @@ async function register(event) {
       throw new Error("Invalid username or password");
    }
 
-   const response = await fetch('/api/register', {
+   const response = await fetch('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify(data)
    });

@@ -12,31 +12,38 @@
   </head>
   <body>
     <div id="app-block">
-      <div id="notes-block">
-        <div id="notes-sidebar">
-          <div id="notes-header">
-            <span>hi, <span id="username-display"></span>!</span>
-            <span id="logout" onclick="logout()">log out</span>
-          </div>
-          <div id="sync-status">all changes saved</div>
-          <div id="notes-settings">
-            <div id="notes-list-name">notes</div>
-            <button id="delete-note-btn" onclick="deleteNote()">×</button>
-            <button id="rename-note-btn" onclick="renameNote()">✎</button>
-            <button id="add-note-btn" onclick="addNote()">+</button>
-          </div>
-          <div id="notes-list"></div>
+      <div id="notes-sidebar">
+        <div id="notes-header">
+          <span>hi, <span id="username-display"></span>!</span>
+          <span id="logout">log out</span>
         </div>
+        <div id="sync-status">all changes saved</div>
+        <div id="notes-settings">
+          <div id="notes-list-name">notes</div>
+          <div class="note-btns">
+            <button class="note-btn js-note-btn-delete">×</button>
+            <button class="note-btn js-note-btn-add">+</button>
+          </div>
+        </div>
+        <div id="notes-list"></div>
+      </div>
 
+      <div class="note-panel">
+        <input
+          type="text"
+          class="note-title"
+          autocomplete="off"
+          placeholder="untitled"
+          required
+        />
         <textarea
           id="note-content"
           placeholder="Type something..."
-          oninput="onNoteChanged()"
           spellcheck="false"
         ></textarea>
       </div>
     </div>
 
-    <script src="static/js/script.js"></script>
+    <script src="static/js/notes.js"></script>
   </body>
 </html>

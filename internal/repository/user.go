@@ -1,39 +1,31 @@
 package repository
 
 import (
-	"errors"
-	"math/rand/v2"
 	"notes-go/internal/model"
 )
 
+type UserDB map[string]*model.User
+
 type UsersRepository struct {
+	usersdb UserDB
 }
 
 func NewUsersRepository() *UsersRepository {
-	usersdb = make(map[int64]model.User)
-
-	return &UsersRepository{}
+	return &UsersRepository{
+		usersdb: make(UserDB),
+	}
 }
 
 func (r *UsersRepository) GetByUsername(username string) (*model.User, error) {
-	for _, u := range usersdb {
-		if username == u.Username {
-			return &u, nil
-		}
-	}
-	return nil, errors.New("User 404")
+	return r.usersdb[username], nil
 }
 
 func (r *UsersRepository) SaveUser(username string, passwordHash []byte) (*model.User, error) {
 
-	userID := rand.Int64N(999999)
-	user := model.User{
-		ID:           userID,
+	user := &model.User{
 		Username:     username,
 		PasswordHash: passwordHash,
 	}
-	usersdb[userID] = user
-	return &user, nil
+	r.usersdb[username] = user
+	return user, nil
 }
-
-var usersdb map[int64]model.User
