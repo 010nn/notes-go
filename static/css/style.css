@@ -36,6 +36,12 @@ button {
    margin: 20%;
 }
 
+.auth-block__error-message {
+   display: none;
+   color: red;
+   font-size: 16px;
+}
+
 /* ======================== Notes ======================== */
 
 .app {

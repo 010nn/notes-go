@@ -15,7 +15,7 @@ import (
 
 func main() {
 
-	fileServer := http.FileServer(http.Dir("./static"))
+	fileServer := http.FileServer(handler.NewNeuteredFileSystem("./static"))
 
 	staticHandler := handler.NewStaticHandler()
 	notesHandler := handler.NewNotesHandler()
@@ -31,7 +31,10 @@ func main() {
 	r.Use(middleware.Logging)
 
 	// Static files
-	r.Handle("/static/*", http.StripPrefix("/static/", fileServer))
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.StaticSmartCache)
+		r.Handle("/static/*", http.StripPrefix("/static/", fileServer))
+	})
 
 	// Public routing
 	r.Get("/login", staticHandler.Auth)
