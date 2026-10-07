@@ -11,33 +11,33 @@
     />
   </head>
   <body>
-    <div id="app-block">
-      <div id="notes-sidebar">
-        <div id="notes-header">
-          <span>hi, <span id="username-display"></span>!</span>
-          <span id="logout">log out</span>
+    <div class="app">
+      <div class="sidebar">
+        <div class="sidebar__header">
+          <span>hi, <span class="js-username"></span>!</span>
+          <span class="sidebar__logout js-logout-btn">log out</span>
         </div>
-        <div id="sync-status">all changes saved</div>
-        <div id="notes-settings">
-          <div id="notes-list-name">notes</div>
-          <div class="note-btns">
-            <button class="note-btn js-note-btn-delete">×</button>
-            <button class="note-btn js-note-btn-add">+</button>
+        <div class="sidebar__sync-status js-sync-status">all changes saved</div>
+        <div class="sidebar__settings">
+          <div class="sidebar__title">notes</div>
+          <div class="sidebar__actions">
+            <button class="btn js-note-delete-btn">×</button>
+            <button class="btn js-note-add-btn">+</button>
           </div>
         </div>
-        <div id="notes-list"></div>
+        <div class="sidebar__list js-notes-list"></div>
       </div>
 
       <div class="note-panel">
         <input
           type="text"
-          class="note-title"
+          class="note-panel__title js-note-title-input"
           autocomplete="off"
           placeholder="untitled"
           required
         />
         <textarea
-          id="note-content"
+          class="note-panel__content js-note-content-input"
           placeholder="Type something..."
           spellcheck="false"
         ></textarea>

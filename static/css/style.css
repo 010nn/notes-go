@@ -38,41 +38,41 @@ button {
 
 /* ======================== Notes ======================== */
 
-#app-block {
+.app {
    display: flex;
    height: 100vh;
    left: 10%;
 }
 
-#notes-sidebar {
+.sidebar {
    width: 200px;
    border-right: 1px solid #333;
 }
 
-#notes-header {
+.sidebar__header {
    padding: 5px;
 
    display: flex;
    justify-content: space-between;
 }
 
-#sync-status {
+.sidebar__sync-status {
    font-size: 0.8em;
    text-align: end;
    padding: 5px;
    margin-top: 5px;
 }
 
-#logout {
+.sidebar__logout {
    align-self: end;
    font-weight: bold;
 }
 
-#logout:hover {
+.sidebar__logout:hover {
    text-decoration: underline;
 }
 
-#notes-settings {
+.sidebar__settings {
    display: flex;
    justify-content: space-between;
    align-items: center;
@@ -80,18 +80,18 @@ button {
    width: 100%;
 }
 
-.note-btns {
+.sidebar__actions {
    display: flex;
    justify-content: space-between;
    padding: 0.5rem;
    gap: 0.5rem;
 }
 
-#notes-list-name {
+.sidebar__title {
    font-size: 26px;
 }
 
-.note-btn {
+.btn {
    display: flex;
    margin: 0;
    width: 36px;
@@ -106,7 +106,7 @@ button {
       color 0.15s;
 }
 
-.note-btn:hover {
+.btn:hover {
    background: #1a1a1a;
 }
 
@@ -137,7 +137,7 @@ button {
    padding: 30px;
 }
 
-.note-title {
+.note-panel__title {
    font-size: 28px;
    font-weight: 600;
    color: #ffffff;
@@ -148,11 +148,11 @@ button {
    padding: 0;
 }
 
-.note-title:focus {
+.note-panel__title:focus {
    outline: none;
 }
 
-#note-content {
+.note-panel__content {
    flex: 1;
    background: transparent;
    font-size: 1rem;

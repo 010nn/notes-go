@@ -8,10 +8,10 @@ import (
 )
 
 type UserService struct {
-	repo *repository.UsersRepository
+	repo repository.UserRepository
 }
 
-func NewUserService(repo *repository.UsersRepository) *UserService {
+func NewUserService(repo repository.UserRepository) *UserService {
 	return &UserService{
 		repo: repo,
 	}
@@ -40,7 +40,7 @@ func (s *UserService) Register(auth model.AuthRequest) error {
 	}
 
 	// Сохранение в БД
-	if _, err = s.repo.SaveUser(auth.Username, passwordHash); err != nil {
+	if _, err = s.repo.Create(auth.Username, passwordHash); err != nil {
 		return model.ErrInternal
 	}
 

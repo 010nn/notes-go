@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 	"notes-go/internal/config"
-	"notes-go/internal/repository"
+	"notes-go/internal/repository/memory"
 	"notes-go/internal/service"
 	"notes-go/internal/transport"
 	"notes-go/internal/transport/handler"
@@ -21,7 +21,7 @@ func main() {
 	notesHandler := handler.NewNotesHandler()
 
 	// Auth
-	userRepository := repository.NewUsersRepository()
+	userRepository := memory.NewUserMemoryRepository()
 	userService := service.NewUserService(userRepository)
 	authHandler := handler.NewAuthHandler(userService)
 
@@ -38,6 +38,7 @@ func main() {
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/login", authHandler.Login)
+			r.Post("/logout", authHandler.Logout)
 			r.Post("/register", authHandler.Register)
 		})
 
