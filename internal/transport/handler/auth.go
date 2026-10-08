@@ -31,6 +31,11 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON or request size exceeded", http.StatusBadRequest)
 		return
 	}
+	// Validation
+	if err := auth.Validate(); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
 
 	log.Printf("login user: %s %s\n", auth.Username, auth.Password)
 
@@ -87,6 +92,11 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	// Декодируем JSON из тела запроса напрямую в структуру
 	if err := json.NewDecoder(r.Body).Decode(&auth); err != nil {
 		http.Error(w, "Invalid JSON or request size exceeded", http.StatusBadRequest)
+		return
+	}
+	// Validation
+	if err := auth.Validate(); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 
