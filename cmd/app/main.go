@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"notes-go/internal/config"
+	"notes-go/internal/repository/json"
 	"notes-go/internal/repository/memory"
 	"notes-go/internal/service"
 	"notes-go/internal/transport"
@@ -16,9 +18,14 @@ import (
 func main() {
 
 	fileServer := http.FileServer(handler.NewNeuteredFileSystem("./static"))
+	regexUUID := "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
 
 	staticHandler := handler.NewStaticHandler()
-	notesHandler := handler.NewNotesHandler()
+
+	// Note
+	noteRepository := json.NewNoteJSONRepository()
+	noteService := service.NewNoteService(noteRepository)
+	notesHandler := handler.NewNotesHandler(noteService)
 
 	// Auth
 	userRepository := memory.NewUserMemoryRepository()
@@ -45,10 +52,13 @@ func main() {
 			r.Post("/register", authHandler.Register)
 		})
 
-		// Protected api
 		r.Group(func(r chi.Router) {
+			apiNoteId := fmt.Sprintf("/notes/{id:%s}", regexUUID)
 			r.Use(middleware.AuthRequired)
-			r.Get("/note/{id:[0-9]+}", notesHandler.GetNote)
+			r.Get(apiNoteId, notesHandler.Get)
+			r.Get("/notes", notesHandler.List)
+			r.Post(apiNoteId, notesHandler.Update)
+			r.Delete(apiNoteId, notesHandler.Delete)
 		})
 	})
 

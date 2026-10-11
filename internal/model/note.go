@@ -8,11 +8,6 @@ type Note struct {
 	Title     string    `json:"title"`
 	Content   string    `json:"content,omitempty"`
 	UpdatedAt time.Time `json:"updatedAt"`
+	CreatedAt time.Time `json:"createdAt"`
 	Version   int64     `json:"version"`
-}
-
-type NoteMeta struct {
-	ID        string    `json:"id"`
-	Title     string    `json:"title"`
-	UpdatedAt time.Time `json:"updatedAt"`
 }

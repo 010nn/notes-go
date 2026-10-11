@@ -1,7 +1,6 @@
 package transport
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"strings"
@@ -30,7 +29,7 @@ func (m *Middleware) AuthRequired(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "username", claims.Username)
+		ctx := WithUser(r.Context(), claims.Username)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

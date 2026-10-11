@@ -48,6 +48,7 @@ button {
    display: flex;
    height: 100vh;
    left: 10%;
+   padding-left: 10px;
 }
 
 .sidebar {
@@ -89,8 +90,8 @@ button {
 .sidebar__actions {
    display: flex;
    justify-content: space-between;
-   padding: 0.5rem;
-   gap: 0.5rem;
+   padding: 2px;
+   gap: 2px;
 }
 
 .sidebar__title {
@@ -100,8 +101,8 @@ button {
 .btn {
    display: flex;
    margin: 0;
-   width: 36px;
-   height: 36px;
+   width: 32px;
+   height: 32px;
    border: 1px solid #333;
    align-items: center;
    justify-content: center;
@@ -116,9 +117,16 @@ button {
    background: #1a1a1a;
 }
 
+.sidebar__list {
+   display: flex;
+   flex-direction: column;
+   flex: 1;
+   overflow-y: auto;
+}
+
 .note-item {
-   margin: 5px 0 5px 5px;
-   padding: 10px;
+   margin: 8px 0 0 5px;
+   padding: 8px 10px;
    cursor: pointer;
    transition: background 0.15s;
    border-start-start-radius: 5px;

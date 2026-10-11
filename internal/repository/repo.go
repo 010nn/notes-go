@@ -11,9 +11,9 @@ type UserRepository interface {
 }
 
 type NoteRepository interface {
-	ListMeta(ctx context.Context, userID string) ([]model.NoteMeta, error)
+	List(ctx context.Context, userID string) ([]*model.Note, error)
 	Get(ctx context.Context, userID, id string) (*model.Note, error)
-	Create(ctx context.Context, userID, title, content string) (*model.Note, error)
+	Create(ctx context.Context, userID, id, title, content string, version int64) (*model.Note, error)
 	Update(ctx context.Context, userID, id, title, content string, version int64) (*model.Note, error)
 	Delete(ctx context.Context, userID, id string) error
 }
