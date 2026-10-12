@@ -3,7 +3,9 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"notes-go/internal/domain"
 	"notes-go/internal/service"
+	"notes-go/internal/transport/response"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -40,18 +42,18 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	// Декодируем JSON из тела запроса напрямую в структуру
 	if err := json.NewDecoder(r.Body).Decode(&auth); err != nil {
-		http.Error(w, "Invalid JSON or request size exceeded", http.StatusBadRequest)
+		response.HandleError(w, r, domain.ErrInvalidJSON)
 		return
 	}
 	// Validation
 	if err := auth.Validate(); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		response.HandleError(w, r, domain.ErrInvalidJSON)
 		return
 	}
 
 	token, err := h.service.Login(r.Context(), auth.Username, auth.Password)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		response.HandleError(w, r, err)
 		return
 	}
 
@@ -93,17 +95,17 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	// Декодируем JSON из тела запроса напрямую в структуру
 	if err := json.NewDecoder(r.Body).Decode(&auth); err != nil {
-		http.Error(w, "Invalid JSON or request size exceeded", http.StatusBadRequest)
+		response.HandleError(w, r, domain.ErrInvalidJSON)
 		return
 	}
 	// Validation
 	if err := auth.Validate(); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		response.HandleError(w, r, domain.ErrInvalidJSON)
 		return
 	}
 
 	if err := h.service.Register(r.Context(), auth.Username, auth.Password); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		response.HandleError(w, r, err)
 		return
 	}
 

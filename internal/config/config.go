@@ -8,11 +8,8 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
-const (
-	PORT string = "8000"
-)
-
 var (
+	PORT            = getEnv("GO_PORT", "8080")
 	JWT_SECRET      = []byte(getEnv("JWT_SECRET", "key"))
 	JWT_ACCESS_TIME = getEnvAsInt("JWT_ACCESS_TIME", 15)
 )

@@ -1,11 +1,9 @@
 package transport
 
 import (
-	"log"
 	"net/http"
 	"notes-go/pkg/jwt"
 	"strings"
-	"time"
 )
 
 type Middleware struct {
@@ -35,15 +33,6 @@ func (m *Middleware) AuthRequired(next http.Handler) http.Handler {
 
 		ctx := WithUser(r.Context(), claims.UserID)
 		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-func (m *Middleware) Logging(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		log.Printf("Log: %s %s %s %v\n", r.Method, r.URL.Path, r.RemoteAddr, time.Since(start))
-
-		next.ServeHTTP(w, r)
 	})
 }
 

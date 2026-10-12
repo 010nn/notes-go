@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"notes-go/internal/config"
 	"notes-go/internal/repository/json"
@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
 )
 
 func main() {
@@ -25,7 +26,11 @@ func main() {
 	JWTManager := jwt.NewJWTManager(config.JWT_SECRET, time.Hour*24, 0)
 
 	// Note
-	noteRepository := json.NewNoteJSONRepository()
+	noteRepository, err := json.NewNoteJSONRepository()
+	if err != nil {
+		slog.Error("note repo: ", "err", err)
+		return
+	}
 	noteService := service.NewNoteService(noteRepository)
 	notesHandler := handler.NewNotesHandler(noteService)
 
@@ -37,7 +42,10 @@ func main() {
 	middleware := transport.NewMiddleware(JWTManager)
 
 	r := chi.NewRouter()
-	r.Use(middleware.Logging)
+	r.Use(chimiddleware.RequestID)
+	r.Use(chimiddleware.Recoverer)
+	r.Use(chimiddleware.Timeout(time.Minute))
+	r.Use(chimiddleware.Logger)
 
 	// Static files
 	r.Group(func(r chi.Router) {
@@ -57,7 +65,6 @@ func main() {
 		r.Group(func(r chi.Router) {
 			apiNoteId := fmt.Sprintf("/notes/{id:%s}", regexUUID)
 			r.Use(middleware.AuthRequired)
-			// r.Get(apiNoteId, notesHandler.Get)
 			r.Get("/notes", notesHandler.List)
 			r.Post(apiNoteId, notesHandler.Update)
 			r.Delete(apiNoteId, notesHandler.Delete)
@@ -80,9 +87,10 @@ func main() {
 		IdleTimeout:       120 * time.Second,
 	}
 
-	log.Printf("Server running on http://127.0.0.1:%s\n", config.PORT)
+	slog.Info("Server running on http://127.0.0.1:" + config.PORT)
 	if err := server.ListenAndServe(); err != nil {
-		log.Println(err)
+		slog.Error("run server", "err", err)
+		return
 	}
 
 }

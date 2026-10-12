@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"notes-go/internal/domain"
 	"uuid"
 )
@@ -41,7 +42,7 @@ func (s *NoteService) Update(ctx context.Context, username string, id uuid.UUID,
 		if errors.Is(err, domain.ErrNoteNotFound) {
 			return s.repo.Create(ctx, username, id, title, content, 1)
 		}
-		return nil, err
+		return nil, fmt.Errorf("service get note: %w", err)
 	}
 
 	// Проверка версии
@@ -51,7 +52,7 @@ func (s *NoteService) Update(ctx context.Context, username string, id uuid.UUID,
 
 	updatedNote, err := s.repo.Update(ctx, username, id, title, content, version)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("service update note: %w", err)
 	}
 
 	return updatedNote, nil

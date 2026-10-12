@@ -2,10 +2,11 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
+	"notes-go/internal/domain"
 	"notes-go/internal/service"
 	"notes-go/internal/transport"
+	"notes-go/internal/transport/response"
 	"time"
 	"uuid"
 
@@ -47,47 +48,18 @@ func NewNotesHandler(service *service.NoteService) *NotesHandler {
 	return &notesHandler
 }
 
-// GET /notes/{id}
-func (h *NotesHandler) Get(w http.ResponseWriter, r *http.Request) {
-	// ctx := r.Context()
-	// username, ok := transport.UserFromCtx(ctx)
-	// if !ok {
-	// 	http.Error(w, "unauthorized", http.StatusUnauthorized)
-	// 	return
-	// }
-
-	// idStr := chi.URLParam(r, "id")
-	// if idStr == "" {
-	// 	http.Error(w, "id is required", http.StatusBadRequest)
-	// 	return
-	// }
-
-	// id, err := uuid.Parse(idStr)
-	// if err != nil {
-	// 	http.Error(w, "invalid id", http.StatusBadRequest)
-	// }
-
-	// note, err := h.service.Get(r.Context(), username, id)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusUnauthorized)
-	// 	return
-	// }
-
-	// transport.WriteJSON(w, http.StatusOK, note)
-}
-
 // GET /notes
 func (h *NotesHandler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	username, ok := transport.UserFromCtx(ctx)
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		response.HandleError(w, r, domain.ErrUserNotFound)
 		return
 	}
 
 	notes, err := h.service.List(r.Context(), username)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		response.HandleError(w, r, err)
 		return
 	}
 
@@ -103,7 +75,7 @@ func (h *NotesHandler) List(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	transport.WriteJSON(w, http.StatusOK, notesResponse)
+	response.JSON(w, http.StatusOK, notesResponse)
 }
 
 // POST /notes/{id}
@@ -114,35 +86,31 @@ func (h *NotesHandler) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	username, ok := transport.UserFromCtx(ctx)
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		response.HandleError(w, r, domain.ErrUserNotFound)
 		return
 	}
 
 	idStr := chi.URLParam(r, "id")
 	if idStr == "" {
-		http.Error(w, "id is required", http.StatusBadRequest)
+		response.HandleError(w, r, domain.ErrInvalidNoteId)
 		return
 	}
 
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		response.HandleError(w, r, domain.ErrInvalidNoteId)
+		return
 	}
 
 	var req updateNoteRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		var maxBytesErr *http.MaxBytesError
-		if errors.As(err, &maxBytesErr) {
-			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
-			return
-		}
-		http.Error(w, "invalid json body", http.StatusBadRequest)
+		response.HandleError(w, r, domain.ErrInvalidJSON)
 		return
 	}
 
 	note, err := h.service.Update(r.Context(), username, id, req.Title, req.Content, req.Version)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		response.HandleError(w, r, err)
 		return
 	}
 
@@ -152,7 +120,7 @@ func (h *NotesHandler) Update(w http.ResponseWriter, r *http.Request) {
 		Version:   note.Version,
 	}
 
-	transport.WriteJSON(w, http.StatusOK, noteVersionResponse)
+	response.JSON(w, http.StatusOK, noteVersionResponse)
 }
 
 // POST /notes/{id}
@@ -163,25 +131,26 @@ func (h *NotesHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	username, ok := transport.UserFromCtx(ctx)
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		response.HandleError(w, r, domain.ErrUserNotFound)
 		return
 	}
 
 	idStr := chi.URLParam(r, "id")
 	if idStr == "" {
-		http.Error(w, "id is required", http.StatusBadRequest)
+		response.HandleError(w, r, domain.ErrInvalidNoteId)
 		return
 	}
 
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
-	}
-
-	if err := h.service.Delete(r.Context(), username, id); err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		response.HandleError(w, r, domain.ErrInvalidNoteId)
 		return
 	}
 
-	transport.WriteJSON(w, http.StatusOK, nil)
+	if err := h.service.Delete(r.Context(), username, id); err != nil {
+		response.HandleError(w, r, err)
+		return
+	}
+
+	response.JSON(w, http.StatusOK, nil)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"notes-go/internal/domain"
 	"os"
 	"path/filepath"
@@ -48,12 +49,14 @@ type NoteJSONRepository struct {
 	mu    sync.Mutex
 }
 
-func NewNoteJSONRepository() *NoteJSONRepository {
+func NewNoteJSONRepository() (*NoteJSONRepository, error) {
 	r := &NoteJSONRepository{
 		Notes: JSONStructure{Users: make(Users)},
 	}
-	r.load()
-	return r
+	if err := r.load(); err != nil {
+		return nil, err
+	}
+	return r, nil
 }
 
 func (r *NoteJSONRepository) load() error {
@@ -76,7 +79,7 @@ func (r *NoteJSONRepository) load() error {
 
 	var structure JSONStructure
 	if err := json.Unmarshal(data, &structure); err != nil {
-		return err
+		return fmt.Errorf("NoteJSON load: %w", err)
 	}
 
 	if structure.Users == nil {
@@ -90,18 +93,18 @@ func (r *NoteJSONRepository) load() error {
 
 func (r *NoteJSONRepository) save() error {
 	if err := os.MkdirAll(filepath.Dir(notesPath), 0o755); err != nil {
-		return err
+		return fmt.Errorf("NoteJSON save: %w", err)
 	}
 
 	data, err := json.MarshalIndent(r.Notes, "", "  ")
 	if err != nil {
-		return err
+		return fmt.Errorf("NoteJSON save: %w", err)
 	}
 
 	// Атомарная запись: сначала во временный файл, потом переименование
 	tmpPath := notesPath + ".tmp"
 	if err := os.WriteFile(tmpPath, data, 0o644); err != nil {
-		return err
+		return fmt.Errorf("NoteJSON save: %w", err)
 	}
 
 	return os.Rename(tmpPath, notesPath)
@@ -156,7 +159,7 @@ func (r *NoteJSONRepository) Create(_ context.Context, username string, id uuid.
 
 	if err := r.save(); err != nil {
 		delete(notes, id)
-		return nil, err
+		return nil, fmt.Errorf("save json: %w", err)
 	}
 
 	return note.toDomainNote(username, id), nil
@@ -192,7 +195,7 @@ func (r *NoteJSONRepository) Update(_ context.Context, username string, id uuid.
 		note.Content = oldContent
 		note.UpdatedAt = oldUpdatedAt
 		note.Version = oldVersion
-		return nil, err
+		return nil, fmt.Errorf("save json: %w", err)
 	}
 
 	return note.toDomainNote(username, id), nil
@@ -224,7 +227,7 @@ func (r *NoteJSONRepository) Delete(_ context.Context, username string, id uuid.
 			r.Notes.Users[username] = make(NotesList)
 		}
 		r.Notes.Users[username][id] = note
-		return err
+		return fmt.Errorf("save json: %w", err)
 	}
 
 	return nil
