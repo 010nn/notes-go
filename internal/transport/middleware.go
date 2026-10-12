@@ -3,15 +3,19 @@ package transport
 import (
 	"log"
 	"net/http"
+	"notes-go/pkg/jwt"
 	"strings"
 	"time"
 )
 
 type Middleware struct {
+	jwtManager *jwt.JWTManager
 }
 
-func NewMiddleware() *Middleware {
-	return &Middleware{}
+func NewMiddleware(jwtManager *jwt.JWTManager) *Middleware {
+	return &Middleware{
+		jwtManager: jwtManager,
+	}
 }
 
 func (m *Middleware) AuthRequired(next http.Handler) http.Handler {
@@ -23,13 +27,13 @@ func (m *Middleware) AuthRequired(next http.Handler) http.Handler {
 		}
 		token := cookie.Value
 
-		claims, err := ParseJWSToken(token)
+		claims, err := m.jwtManager.Verify(token)
 		if err != nil {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
-		ctx := WithUser(r.Context(), claims.Username)
+		ctx := WithUser(r.Context(), claims.UserID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

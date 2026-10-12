@@ -4,18 +4,39 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"notes-go/internal/model"
+	"notes-go/internal/domain"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
+	"uuid"
 )
 
 const (
 	notesPath = "pgdata/notes.json"
 )
 
-type NotesList map[string]*model.Note
+type noteJSON struct {
+	Title     string    `json:"title"`
+	Content   string    `json:"content,omitempty"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	CreatedAt time.Time `json:"createdAt"`
+	Version   int64     `json:"version"`
+}
+
+func (note *noteJSON) toDomainNote(username string, id uuid.UUID) *domain.Note {
+	return &domain.Note{
+		ID:        id,
+		Username:  username,
+		Title:     note.Title,
+		Content:   note.Content,
+		UpdatedAt: note.UpdatedAt,
+		CreatedAt: note.CreatedAt,
+		Version:   note.Version,
+	}
+}
+
+type NotesList map[uuid.UUID]*noteJSON
 type Users map[string]NotesList
 
 type JSONStructure struct {
@@ -42,7 +63,6 @@ func (r *NoteJSONRepository) load() error {
 	data, err := os.ReadFile(notesPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			// Файла ещё нет — начинаем с пустой структуры
 			r.Notes = JSONStructure{Users: make(Users)}
 			return nil
 		}
@@ -87,21 +107,21 @@ func (r *NoteJSONRepository) save() error {
 	return os.Rename(tmpPath, notesPath)
 }
 
-func (r *NoteJSONRepository) List(_ context.Context, username string) ([]*model.Note, error) {
+func (r *NoteJSONRepository) List(_ context.Context, username string) ([]*domain.Note, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	notes := r.getNotesByName(username)
 
-	notesArr := make([]*model.Note, 0, len(*notes))
+	notesArr := make([]*domain.Note, 0, len(*notes))
 
-	for _, v := range *notes {
-		notesArr = append(notesArr, v)
+	for id, note := range *notes {
+		notesArr = append(notesArr, note.toDomainNote(username, id))
 	}
 	return notesArr, nil
 }
 
-func (r *NoteJSONRepository) Get(_ context.Context, username, id string) (*model.Note, error) {
+func (r *NoteJSONRepository) Get(_ context.Context, username string, id uuid.UUID) (*domain.Note, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -111,22 +131,20 @@ func (r *NoteJSONRepository) Get(_ context.Context, username, id string) (*model
 	// Проверяем, есть ли такая заметка у пользователя
 	note, noteExists := notes[id]
 	if !noteExists {
-		return nil, model.ErrNoteNotFound
+		return nil, domain.ErrNoteNotFound
 	}
 
-	return note, nil
+	return note.toDomainNote(username, id), nil
 }
 
-func (r *NoteJSONRepository) Create(_ context.Context, username, id, title, content string, version int64) (*model.Note, error) {
+func (r *NoteJSONRepository) Create(_ context.Context, username string, id uuid.UUID, title, content string, version int64) (*domain.Note, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	// Проверяем, если ти пользователь
 	notes := *r.getNotesByName(username)
 
-	note := &model.Note{
-		ID:        id,
-		UserID:    username,
+	note := &noteJSON{
 		Title:     title,
 		Content:   content,
 		UpdatedAt: time.Now(),
@@ -141,10 +159,10 @@ func (r *NoteJSONRepository) Create(_ context.Context, username, id, title, cont
 		return nil, err
 	}
 
-	return note, nil
+	return note.toDomainNote(username, id), nil
 }
 
-func (r *NoteJSONRepository) Update(_ context.Context, username, id, title, content string, version int64) (*model.Note, error) {
+func (r *NoteJSONRepository) Update(_ context.Context, username string, id uuid.UUID, title, content string, version int64) (*domain.Note, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -154,7 +172,7 @@ func (r *NoteJSONRepository) Update(_ context.Context, username, id, title, cont
 	// Проверяем наличие заметки
 	note, noteExists := notes[id]
 	if !noteExists {
-		return nil, model.ErrNoteNotFound
+		return nil, domain.ErrNoteNotFound
 	}
 
 	// сохраняем старое состояние для отката
@@ -177,10 +195,10 @@ func (r *NoteJSONRepository) Update(_ context.Context, username, id, title, cont
 		return nil, err
 	}
 
-	return note, nil
+	return note.toDomainNote(username, id), nil
 }
 
-func (r *NoteJSONRepository) Delete(_ context.Context, username, id string) error {
+func (r *NoteJSONRepository) Delete(_ context.Context, username string, id uuid.UUID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -190,7 +208,7 @@ func (r *NoteJSONRepository) Delete(_ context.Context, username, id string) erro
 	// Проверяем наличие заметки перед удалением
 	note, noteExists := notes[id]
 	if !noteExists {
-		return model.ErrNoteNotFound
+		return domain.ErrNoteNotFound
 	}
 
 	// Удаляем заметку из карты пользователя

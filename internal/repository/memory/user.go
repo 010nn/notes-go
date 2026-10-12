@@ -1,10 +1,8 @@
 package memory
 
-import (
-	"notes-go/internal/model"
-)
+import "notes-go/internal/domain"
 
-type UserDB map[string]*model.User
+type UserDB map[string]*domain.User
 
 type UserMemoryRepository struct {
 	usersdb UserDB
@@ -16,13 +14,13 @@ func NewUserMemoryRepository() *UserMemoryRepository {
 	}
 }
 
-func (r *UserMemoryRepository) GetByUsername(username string) (*model.User, error) {
+func (r *UserMemoryRepository) GetByUsername(username string) (*domain.User, error) {
 	return r.usersdb[username], nil
 }
 
-func (r *UserMemoryRepository) Create(username string, passwordHash []byte) (*model.User, error) {
+func (r *UserMemoryRepository) Create(username string, passwordHash []byte) (*domain.User, error) {
 
-	user := &model.User{
+	user := &domain.User{
 		Username:     username,
 		PasswordHash: passwordHash,
 	}

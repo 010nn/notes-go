@@ -1,73 +1,91 @@
 package service
 
 import (
-	"notes-go/internal/model"
-	"notes-go/internal/repository"
+	"context"
+	"log"
+	"notes-go/internal/domain"
+	"notes-go/pkg/jwt"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
-type UserService struct {
-	repo repository.UserRepository
+// === User Repository ===
+type userRepository interface {
+	GetByUsername(username string) (*domain.User, error)
+	Create(username string, passwordHash []byte) (*domain.User, error)
 }
 
-func NewUserService(repo repository.UserRepository) *UserService {
+// === Service ===
+type UserService struct {
+	repo       userRepository
+	jwtManager *jwt.JWTManager
+}
+
+func NewUserService(repo userRepository, jwtManager *jwt.JWTManager) *UserService {
 	return &UserService{
-		repo: repo,
+		repo:       repo,
+		jwtManager: jwtManager,
 	}
 }
 
-func (s *UserService) Register(auth model.AuthRequest) error {
+func (s *UserService) Register(ctx context.Context, username, password string) error {
 
 	// Validation test
-	if auth.Username == "" {
-		return model.ErrUsernameValidationFailed
+	if username == "" {
+		return domain.ErrUsernameValidationFailed
 	}
 
-	if auth.Password == "" {
-		return model.ErrPasswordValidationFailed
+	if password == "" {
+		return domain.ErrPasswordValidationFailed
 	}
 
 	// Ищем пользователя в БД по username
-	if user, _ := s.repo.GetByUsername(auth.Username); user != nil {
-		return model.ErrUserAlreadyExists
+	if user, _ := s.repo.GetByUsername(username); user != nil {
+		return domain.ErrUserAlreadyExists
 	}
 
 	// Получение хэша пароля
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(auth.Password), bcrypt.DefaultCost)
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return model.ErrInternal
+		return domain.ErrInternal
 	}
 
 	// Сохранение в БД
-	if _, err = s.repo.Create(auth.Username, passwordHash); err != nil {
-		return model.ErrInternal
+	if _, err = s.repo.Create(username, passwordHash); err != nil {
+		return domain.ErrInternal
 	}
 
 	return nil
 }
 
-func (s *UserService) Login(auth model.AuthRequest) (*model.User, error) {
+func (s *UserService) Login(ctx context.Context, username, password string) (string, error) {
 
 	// Validation test
-	if auth.Username == "" {
-		return nil, model.ErrUsernameValidationFailed
+	if username == "" {
+		return "", domain.ErrUsernameValidationFailed
 	}
 
-	if auth.Password == "" {
-		return nil, model.ErrPasswordValidationFailed
+	if password == "" {
+		return "", domain.ErrPasswordValidationFailed
 	}
 
 	// Find user
-	user, err := s.repo.GetByUsername(auth.Username)
+	user, err := s.repo.GetByUsername(username)
 	if user == nil {
-		return nil, model.ErrInvalidCredentials
+		return "", domain.ErrInvalidCredentials
 	}
 
 	// Check password hash
-	if err = bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(auth.Password)); err != nil {
-		return nil, model.ErrInvalidCredentials
+	if err = bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password)); err != nil {
+		return "", domain.ErrInvalidCredentials
 	}
 
-	return user, nil
+	// Generate JWT token
+	token, _, err := s.jwtManager.GenerateTokens(user.Username)
+	if err != nil {
+		log.Printf("error jwt: %v", err)
+		return "", domain.ErrInternal
+	}
+
+	return token, nil
 }

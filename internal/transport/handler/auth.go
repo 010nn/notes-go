@@ -2,14 +2,26 @@ package handler
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
-	"notes-go/internal/model"
 	"notes-go/internal/service"
-	"notes-go/internal/transport"
 	"time"
+
+	"github.com/go-playground/validator/v10"
 )
 
+// DTO
+type authRequest struct {
+	Username string `json:"username" validate:"required,max=32"`
+	Password string `json:"password" validate:"required,max=32"`
+}
+
+var validate = validator.New()
+
+func (req authRequest) Validate() error {
+	return validate.Struct(req)
+}
+
+// Handlers
 type AuthHandler struct {
 	service *service.UserService
 }
@@ -24,7 +36,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	r.Body = http.MaxBytesReader(w, r.Body, 1048576) // максимум 1 МБ
 
-	var auth model.AuthRequest
+	var auth authRequest
 
 	// Декодируем JSON из тела запроса напрямую в структуру
 	if err := json.NewDecoder(r.Body).Decode(&auth); err != nil {
@@ -37,19 +49,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("login user: %s %s\n", auth.Username, auth.Password)
-
-	user, err := h.service.Login(auth)
+	token, err := h.service.Login(r.Context(), auth.Username, auth.Password)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	// Generate JWT token
-	token, err := transport.GenerateJWTAccessToken(user.Username)
-	if err != nil {
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
-		log.Printf("Error: %v", err)
 		return
 	}
 
@@ -87,7 +89,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	r.Body = http.MaxBytesReader(w, r.Body, 1048576) // максимум 1 МБ
 
-	var auth model.AuthRequest
+	var auth authRequest
 
 	// Декодируем JSON из тела запроса напрямую в структуру
 	if err := json.NewDecoder(r.Body).Decode(&auth); err != nil {
@@ -100,9 +102,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("register user: %s %s\n", auth.Username, auth.Password)
-
-	if err := h.service.Register(auth); err != nil {
+	if err := h.service.Register(r.Context(), auth.Username, auth.Password); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

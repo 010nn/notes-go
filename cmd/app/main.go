@@ -10,6 +10,7 @@ import (
 	"notes-go/internal/service"
 	"notes-go/internal/transport"
 	"notes-go/internal/transport/handler"
+	"notes-go/pkg/jwt"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -21,6 +22,7 @@ func main() {
 	regexUUID := "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
 
 	staticHandler := handler.NewStaticHandler()
+	JWTManager := jwt.NewJWTManager(config.JWT_SECRET, time.Hour*24, 0)
 
 	// Note
 	noteRepository := json.NewNoteJSONRepository()
@@ -29,10 +31,10 @@ func main() {
 
 	// Auth
 	userRepository := memory.NewUserMemoryRepository()
-	userService := service.NewUserService(userRepository)
+	userService := service.NewUserService(userRepository, JWTManager)
 	authHandler := handler.NewAuthHandler(userService)
 
-	middleware := transport.NewMiddleware()
+	middleware := transport.NewMiddleware(JWTManager)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logging)
@@ -55,7 +57,7 @@ func main() {
 		r.Group(func(r chi.Router) {
 			apiNoteId := fmt.Sprintf("/notes/{id:%s}", regexUUID)
 			r.Use(middleware.AuthRequired)
-			r.Get(apiNoteId, notesHandler.Get)
+			// r.Get(apiNoteId, notesHandler.Get)
 			r.Get("/notes", notesHandler.List)
 			r.Post(apiNoteId, notesHandler.Update)
 			r.Delete(apiNoteId, notesHandler.Delete)

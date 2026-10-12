@@ -74,6 +74,7 @@ const NotesApp = (function () {
                   note.id, note.title, note.content, note.version, false
                )
                state.notes.set(note.id, newNote)
+               console.log("Load: ", note, newNote)
             })
          }
       } catch (error) {
@@ -84,6 +85,7 @@ const NotesApp = (function () {
    async function pushNote(id) {
       const note = getNote(id)
       if (!note) return
+      console.log("Push note: ", note)
       try {
          const response = await fetch(`/api/notes/${note.id}`, {
             method: 'POST',
@@ -101,6 +103,7 @@ const NotesApp = (function () {
             res = await response.json()
             note.dirty = false
             note.version = res.version
+            console.log("Push result:", res)
             return true
          }
       } catch (error) {

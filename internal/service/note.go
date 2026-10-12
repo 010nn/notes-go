@@ -3,32 +3,42 @@ package service
 import (
 	"context"
 	"errors"
-	"notes-go/internal/model"
-	"notes-go/internal/repository"
+	"notes-go/internal/domain"
+	"uuid"
 )
 
-type NoteService struct {
-	repo repository.NoteRepository
+// === Repository Interface ===
+type noteRepository interface {
+	List(ctx context.Context, username string) ([]*domain.Note, error)
+	Get(ctx context.Context, username string, id uuid.UUID) (*domain.Note, error)
+	Create(ctx context.Context, username string, id uuid.UUID, title, content string, version int64) (*domain.Note, error)
+	Update(ctx context.Context, username string, id uuid.UUID, title, content string, version int64) (*domain.Note, error)
+	Delete(ctx context.Context, username string, id uuid.UUID) error
 }
 
-func NewNoteService(repo repository.NoteRepository) *NoteService {
+// === Service ===
+type NoteService struct {
+	repo noteRepository
+}
+
+func NewNoteService(repo noteRepository) *NoteService {
 	return &NoteService{
 		repo: repo,
 	}
 }
 
-func (s *NoteService) List(ctx context.Context, username string) ([]*model.Note, error) {
+func (s *NoteService) List(ctx context.Context, username string) ([]*domain.Note, error) {
 	return s.repo.List(ctx, username)
 }
 
-func (s *NoteService) Get(ctx context.Context, username, id string) (*model.Note, error) {
+func (s *NoteService) Get(ctx context.Context, username string, id uuid.UUID) (*domain.Note, error) {
 	return s.repo.Get(ctx, username, id)
 }
 
-func (s *NoteService) Update(ctx context.Context, username, id, title, content string, version int64) (*model.Note, error) {
+func (s *NoteService) Update(ctx context.Context, username string, id uuid.UUID, title, content string, version int64) (*domain.Note, error) {
 	note, err := s.repo.Get(ctx, username, id)
 	if err != nil {
-		if errors.Is(err, model.ErrNoteNotFound) {
+		if errors.Is(err, domain.ErrNoteNotFound) {
 			return s.repo.Create(ctx, username, id, title, content, 1)
 		}
 		return nil, err
@@ -36,16 +46,17 @@ func (s *NoteService) Update(ctx context.Context, username, id, title, content s
 
 	// Проверка версии
 	if note.Version != version {
-		return nil, model.ErrVersionMismatch
+		return nil, domain.ErrVersionMismatch
 	}
 
-	if _, err := s.repo.Update(ctx, username, id, title, content, version); err != nil {
+	updatedNote, err := s.repo.Update(ctx, username, id, title, content, version)
+	if err != nil {
 		return nil, err
 	}
 
-	return note, nil
+	return updatedNote, nil
 }
 
-func (s *NoteService) Delete(ctx context.Context, username, id string) error {
+func (s *NoteService) Delete(ctx context.Context, username string, id uuid.UUID) error {
 	return s.repo.Delete(ctx, username, id)
 }
