@@ -1,18 +1,50 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
-
-	_ "github.com/joho/godotenv/autoload"
 )
 
-var (
-	PORT            = getEnv("GO_PORT", "8080")
-	JWT_SECRET      = []byte(getEnv("JWT_SECRET", "key"))
-	JWT_ACCESS_TIME = getEnvAsInt("JWT_ACCESS_TIME", 15)
-)
+type Config struct {
+	DB                        DBConfig
+	Port                      string
+	JwtSecret                 []byte
+	JwtAccessExpirationMinute int
+}
+
+type DBConfig struct {
+	User     string
+	Password string
+	Host     string
+	Port     string
+	Name     string
+}
+
+func Load() (*Config, error) {
+	cfg := &Config{
+		DB: DBConfig{
+			User:     getEnv("DB_USER", "user"),
+			Password: getEnv("DB_PASSWORD", ""),
+			Host:     getEnv("DB_HOST", "localhost"),
+			Port:     getEnv("DB_POST", "5432"),
+			Name:     getEnv("DB_NAME", "db"),
+		},
+
+		Port:                      getEnv("GO_PORT", "8080"),
+		JwtSecret:                 []byte(getEnv("JWT_SECRET", "key")),
+		JwtAccessExpirationMinute: getEnvAsInt("JWT_ACCESS_EXPIRATION_MINUTES", 15),
+	}
+
+	return cfg, nil
+}
+
+func (c *DBConfig) DSN() string {
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
+		c.User, c.Password, c.Host, c.Port, c.Name,
+	)
+}
 
 func getEnv(key string, defaultVal string) string {
 	if value, exists := os.LookupEnv(key); exists {

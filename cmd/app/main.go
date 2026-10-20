@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -15,15 +16,39 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
+
+	cfg, err := config.Load()
+	if err != nil {
+		slog.Error("load config", "err", err)
+		return
+	}
+
+	// connect DB
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	dbPool, err := pgxpool.New(ctx, cfg.DB.DSN())
+	if err != nil {
+		slog.Error("connect db", "err", err)
+		return
+	}
+	defer dbPool.Close()
+
+	if err := dbPool.Ping(ctx); err != nil {
+		slog.Error("unavalibale db", "err", err)
+		return
+	}
 
 	fileServer := http.FileServer(handler.NewNeuteredFileSystem("./static"))
 	regexUUID := "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
 
 	staticHandler := handler.NewStaticHandler()
-	JWTManager := jwt.NewJWTManager(config.JWT_SECRET, time.Hour*24, 0)
+	JWTManager := jwt.NewJWTManager(cfg.JwtSecret, time.Duration(cfg.JwtAccessExpirationMinute)*time.Minute, 0)
 
 	// Note
 	noteRepository, err := json.NewNoteJSONRepository()
@@ -79,7 +104,7 @@ func main() {
 
 	// Server
 	server := &http.Server{
-		Addr:              ":" + config.PORT,
+		Addr:              ":" + cfg.Port,
 		Handler:           r,
 		ReadTimeout:       5 * time.Second,
 		ReadHeaderTimeout: 2 * time.Second,
@@ -87,7 +112,7 @@ func main() {
 		IdleTimeout:       120 * time.Second,
 	}
 
-	slog.Info("Server running on http://127.0.0.1:" + config.PORT)
+	slog.Info("Server running on http://127.0.0.1:" + cfg.Port)
 	if err := server.ListenAndServe(); err != nil {
 		slog.Error("run server", "err", err)
 		return
