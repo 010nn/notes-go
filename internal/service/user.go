@@ -11,8 +11,8 @@ import (
 
 // === User Repository ===
 type userRepository interface {
-	GetByUsername(username string) (*domain.User, error)
-	Create(username string, passwordHash []byte) (*domain.User, error)
+	GetByUsername(ctx context.Context, username string) (*domain.User, error)
+	Create(ctx context.Context, username string, passwordHash []byte) (*domain.User, error)
 }
 
 // === Service ===
@@ -40,7 +40,7 @@ func (s *UserService) Register(ctx context.Context, username, password string) e
 	}
 
 	// Ищем пользователя в БД по username
-	if user, _ := s.repo.GetByUsername(username); user != nil {
+	if user, _ := s.repo.GetByUsername(ctx, username); user != nil {
 		return domain.ErrUserAlreadyExists
 	}
 
@@ -51,7 +51,7 @@ func (s *UserService) Register(ctx context.Context, username, password string) e
 	}
 
 	// Сохранение в БД
-	if _, err = s.repo.Create(username, passwordHash); err != nil {
+	if _, err = s.repo.Create(ctx, username, passwordHash); err != nil {
 		return domain.ErrInternal
 	}
 
@@ -70,7 +70,7 @@ func (s *UserService) Login(ctx context.Context, username, password string) (str
 	}
 
 	// Find user
-	user, err := s.repo.GetByUsername(username)
+	user, err := s.repo.GetByUsername(ctx, username)
 	if user == nil {
 		return "", domain.ErrInvalidCredentials
 	}

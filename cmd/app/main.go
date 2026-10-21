@@ -6,8 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"notes-go/internal/config"
-	"notes-go/internal/repository/json"
-	"notes-go/internal/repository/memory"
+	"notes-go/internal/repository/postgres"
 	"notes-go/internal/service"
 	"notes-go/internal/transport"
 	"notes-go/internal/transport/handler"
@@ -51,16 +50,12 @@ func main() {
 	JWTManager := jwt.NewJWTManager(cfg.JwtSecret, time.Duration(cfg.JwtAccessExpirationMinute)*time.Minute, 0)
 
 	// Note
-	noteRepository, err := json.NewNoteJSONRepository()
-	if err != nil {
-		slog.Error("note repo: ", "err", err)
-		return
-	}
+	noteRepository := postgres.NewNoteRepository(dbPool)
 	noteService := service.NewNoteService(noteRepository)
 	notesHandler := handler.NewNotesHandler(noteService)
 
 	// Auth
-	userRepository := memory.NewUserMemoryRepository()
+	userRepository := postgres.NewUserRepository(dbPool)
 	userService := service.NewUserService(userRepository, JWTManager)
 	authHandler := handler.NewAuthHandler(userService)
 

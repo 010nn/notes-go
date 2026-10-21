@@ -12,8 +12,7 @@ import (
 type noteRepository interface {
 	List(ctx context.Context, username string) ([]*domain.Note, error)
 	Get(ctx context.Context, username string, id uuid.UUID) (*domain.Note, error)
-	Create(ctx context.Context, username string, id uuid.UUID, title, content string, version int64) (*domain.Note, error)
-	Update(ctx context.Context, username string, id uuid.UUID, title, content string, version int64) (*domain.Note, error)
+	Save(ctx context.Context, note *domain.Note, oldVersion int64) (*domain.Note, error)
 	Delete(ctx context.Context, username string, id uuid.UUID) error
 }
 
@@ -36,11 +35,18 @@ func (s *NoteService) Get(ctx context.Context, username string, id uuid.UUID) (*
 	return s.repo.Get(ctx, username, id)
 }
 
-func (s *NoteService) Update(ctx context.Context, username string, id uuid.UUID, title, content string, version int64) (*domain.Note, error) {
+func (s *NoteService) Save(ctx context.Context, username string, id uuid.UUID, title, content string, version int64) (*domain.Note, error) {
 	note, err := s.repo.Get(ctx, username, id)
 	if err != nil {
 		if errors.Is(err, domain.ErrNoteNotFound) {
-			return s.repo.Create(ctx, username, id, title, content, 1)
+			note := &domain.Note{
+				ID:       id,
+				Username: username,
+				Title:    title,
+				Content:  content,
+				Version:  1,
+			}
+			return s.repo.Save(ctx, note, 0)
 		}
 		return nil, fmt.Errorf("service get note: %w", err)
 	}
@@ -50,9 +56,13 @@ func (s *NoteService) Update(ctx context.Context, username string, id uuid.UUID,
 		return nil, domain.ErrVersionMismatch
 	}
 
-	updatedNote, err := s.repo.Update(ctx, username, id, title, content, version)
+	note.Version++
+	note.Title = title
+	note.Content = content
+
+	updatedNote, err := s.repo.Save(ctx, note, version)
 	if err != nil {
-		return nil, fmt.Errorf("service update note: %w", err)
+		return nil, fmt.Errorf("service note Save(): %w", err)
 	}
 
 	return updatedNote, nil

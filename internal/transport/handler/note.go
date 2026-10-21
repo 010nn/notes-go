@@ -108,7 +108,7 @@ func (h *NotesHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	note, err := h.service.Update(r.Context(), username, id, req.Title, req.Content, req.Version)
+	note, err := h.service.Save(r.Context(), username, id, req.Title, req.Content, req.Version)
 	if err != nil {
 		response.HandleError(w, r, err)
 		return

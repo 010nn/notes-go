@@ -25,11 +25,11 @@ type DBConfig struct {
 func Load() (*Config, error) {
 	cfg := &Config{
 		DB: DBConfig{
-			User:     getEnv("DB_USER", "user"),
+			User:     getEnv("DB_USER", ""),
 			Password: getEnv("DB_PASSWORD", ""),
 			Host:     getEnv("DB_HOST", "localhost"),
-			Port:     getEnv("DB_POST", "5432"),
-			Name:     getEnv("DB_NAME", "db"),
+			Port:     getEnv("DB_PORT", "5432"),
+			Name:     getEnv("DB_NAME", ""),
 		},
 
 		Port:                      getEnv("GO_PORT", "8080"),
