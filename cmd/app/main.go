@@ -21,6 +21,7 @@ import (
 
 func main() {
 
+	// load config
 	cfg, err := config.Load()
 	if err != nil {
 		slog.Error("load config", "err", err)
@@ -39,7 +40,7 @@ func main() {
 	defer dbPool.Close()
 
 	if err := dbPool.Ping(ctx); err != nil {
-		slog.Error("unavalibale db", "err", err)
+		slog.Error("unavalible db", "err", err)
 		return
 	}
 

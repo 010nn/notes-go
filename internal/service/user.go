@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"notes-go/internal/domain"
 	"notes-go/pkg/jwt"
@@ -47,12 +48,12 @@ func (s *UserService) Register(ctx context.Context, username, password string) e
 	// Получение хэша пароля
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return domain.ErrInternal
+		return fmt.Errorf("failed to generate password hash: %w", err)
 	}
 
 	// Сохранение в БД
 	if _, err = s.repo.Create(ctx, username, passwordHash); err != nil {
-		return domain.ErrInternal
+		return fmt.Errorf("failed to create user: %w", err)
 	}
 
 	return nil
@@ -84,7 +85,7 @@ func (s *UserService) Login(ctx context.Context, username, password string) (str
 	token, _, err := s.jwtManager.GenerateTokens(user.Username)
 	if err != nil {
 		log.Printf("error jwt: %v", err)
-		return "", domain.ErrInternal
+		return "", fmt.Errorf("failed to generate JWT token: %w", err)
 	}
 
 	return token, nil
