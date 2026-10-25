@@ -58,7 +58,7 @@ func main() {
 	// Auth
 	userRepository := postgres.NewUserRepository(dbPool)
 	userService := service.NewUserService(userRepository, JWTManager)
-	authHandler := handler.NewAuthHandler(userService)
+	authHandler := handler.NewAuthHandler(userService, JWTManager)
 
 	middleware := transport.NewMiddleware(JWTManager)
 
@@ -74,13 +74,19 @@ func main() {
 		r.Handle("/static/*", http.StripPrefix("/static/", fileServer))
 	})
 
-	// Public routing
-	r.Get("/login", staticHandler.Auth)
+	// API routing
 	r.Route("/api", func(r chi.Router) {
+		// Public
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/login", authHandler.Login)
 			r.Post("/logout", authHandler.Logout)
 			r.Post("/register", authHandler.Register)
+		})
+
+		// Private
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.AuthRequired)
+			r.Get("/auth/me", authHandler.Me)
 		})
 
 		r.Group(func(r chi.Router) {
@@ -92,7 +98,8 @@ func main() {
 		})
 	})
 
-	// Authorizated routing
+	// Pages routing
+	r.Get("/login", staticHandler.Auth)
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.AuthRequired)
 		r.Get("/", staticHandler.Notes)

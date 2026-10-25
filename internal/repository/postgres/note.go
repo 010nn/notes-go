@@ -110,13 +110,9 @@ func (r *NoteRepository) Delete(ctx context.Context, username string, id uuid.UU
 		WHERE id = $1 AND username = $2;
 	`
 
-	ct, err := r.db.Exec(ctx, query, id, username)
+	_, err := r.db.Exec(ctx, query, id, username)
 	if err != nil {
 		return fmt.Errorf("db note repo Delete(): %w", err)
-	}
-
-	if ct.RowsAffected() == 0 {
-		return fmt.Errorf("note not deleted")
 	}
 
 	return nil

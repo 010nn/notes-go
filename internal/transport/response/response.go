@@ -12,6 +12,7 @@ var clientErrors = map[error]int{
 	domain.ErrInvalidJSON:              http.StatusBadRequest,
 	domain.ErrInvalidNoteId:            http.StatusBadRequest,
 	domain.ErrInvalidCredentials:       http.StatusBadRequest,
+	domain.ErrValidation:               http.StatusBadRequest,
 	domain.ErrUsernameValidationFailed: http.StatusBadRequest,
 	domain.ErrPasswordValidationFailed: http.StatusBadRequest,
 	domain.ErrNoteNotFound:             http.StatusNotFound,

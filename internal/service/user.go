@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"log"
 	"notes-go/internal/domain"
@@ -13,7 +14,7 @@ import (
 // === User Repository ===
 type userRepository interface {
 	GetByUsername(ctx context.Context, username string) (*domain.User, error)
-	Create(ctx context.Context, username string, passwordHash []byte) (*domain.User, error)
+	Create(ctx context.Context, user *domain.User) error
 }
 
 // === Service ===
@@ -29,6 +30,17 @@ func NewUserService(repo userRepository, jwtManager *jwt.JWTManager) *UserServic
 	}
 }
 
+func (s *UserService) GetUser(ctx context.Context, username string) (*domain.User, error) {
+
+	user, err := s.repo.GetByUsername(ctx, username)
+	if err != nil {
+		return nil, domain.ErrUserNotFound
+	}
+
+	return user, nil
+
+}
+
 func (s *UserService) Register(ctx context.Context, username, password string) error {
 
 	// Validation test
@@ -40,19 +52,31 @@ func (s *UserService) Register(ctx context.Context, username, password string) e
 		return domain.ErrPasswordValidationFailed
 	}
 
-	// Ищем пользователя в БД по username
+	// Find user by username
 	if user, _ := s.repo.GetByUsername(ctx, username); user != nil {
 		return domain.ErrUserAlreadyExists
 	}
 
-	// Получение хэша пароля
+	// Get password hash
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("failed to generate password hash: %w", err)
 	}
 
-	// Сохранение в БД
-	if _, err = s.repo.Create(ctx, username, passwordHash); err != nil {
+	// Generate salt
+	salt := make([]byte, 16)
+	if _, err := rand.Read(salt); err != nil {
+		return fmt.Errorf("failed to generate salt: %w", err)
+	}
+
+	user := &domain.User{
+		Username:     username,
+		PasswordHash: passwordHash,
+		NotesSalt:    salt,
+	}
+
+	// Save
+	if err = s.repo.Create(ctx, user); err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
 

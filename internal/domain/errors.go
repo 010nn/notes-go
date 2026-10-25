@@ -8,6 +8,7 @@ var (
 	ErrInvalidJSON              = errors.New("invalid json")
 	ErrInvalidNoteId            = errors.New("invalid id")
 	ErrInvalidCredentials       = errors.New("invalid credentials")
+	ErrValidation               = errors.New("validation error")
 	ErrUsernameValidationFailed = errors.New("invalid username format")
 	ErrPasswordValidationFailed = errors.New("invalid password format")
 	ErrNoteNotFound             = errors.New("note not found")

@@ -16,23 +16,39 @@
       <form class="auth-form js-auth-form">
         <div class="auth-form__input">
           <label>Username</label>
-          <input class="js-auth-form-username" type="text" name="username" />
+          <input class="js-auth-form-username" min="1" max="32" type="text" />
         </div>
         <div class="auth-form__button">
           <label>Password</label>
           <input
             class="js-auth-form-password"
             type="password"
-            name="password"
+            min="3"
+            max="64"
           />
         </div>
 
-        <div class="auth-form__sumbit">
+        <div class="auth-form__submit">
           <button class="js-auth-form-login" type="submit">Login</button>
           <button class="js-auth-form-register" type="submit">Register</button>
         </div>
       </form>
       <div class="auth-block__error-message js-error-message"></div>
+    </div>
+
+    <div class="error-modal js-error-modal" hidden>
+      <div
+        class="error-modal__box"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="error-modal__title"
+      >
+        <h2 class="error-modal__title">error</h2>
+        <p class="error-modal__text js-error-modal__text"></p>
+        <button class="error-modal__btn js-error-modal__btn" type="button">
+          ok
+        </button>
+      </div>
     </div>
   </body>
 

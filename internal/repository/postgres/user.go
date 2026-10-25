@@ -23,7 +23,7 @@ func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 
 func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*domain.User, error) {
 	query := `
-		SELECT username, password_hash
+		SELECT username, password_hash, notes_salt
 		FROM users
 		WHERE username = $1;
 	`
@@ -32,6 +32,7 @@ func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*d
 	err := r.db.QueryRow(ctx, query, username).Scan(
 		&u.Username,
 		&u.PasswordHash,
+		&u.NotesSalt,
 	)
 
 	if err != nil {
@@ -44,23 +45,20 @@ func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*d
 	return &u, nil
 }
 
-func (r *UserRepository) Create(ctx context.Context, username string, passwordHash []byte) (*domain.User, error) {
+func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 	query := `
-		INSERT INTO users (username, password_hash)
-		VALUES ($1, $2);
+		INSERT INTO users (username, password_hash, notes_salt)
+		VALUES ($1, $2, $3);
 	`
 
-	_, err := r.db.Exec(ctx, query, username, passwordHash)
+	_, err := r.db.Exec(ctx, query, user.Username, user.PasswordHash, user.NotesSalt)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			return nil, domain.ErrUserAlreadyExists
+			return domain.ErrUserAlreadyExists
 		}
-		return nil, fmt.Errorf("db repo user Create() username: %s err: %w", username, err)
+		return fmt.Errorf("db repo user Create() username: %s err: %w", user.Username, err)
 	}
 
-	return &domain.User{
-		Username:     username,
-		PasswordHash: passwordHash,
-	}, nil
+	return nil
 }

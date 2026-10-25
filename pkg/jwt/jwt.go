@@ -14,15 +14,15 @@ type Claims struct {
 
 type JWTManager struct {
 	secretKey  []byte
-	accessTTL  time.Duration
-	refreshTTL time.Duration
+	AccessTTL  time.Duration
+	RefreshTTL time.Duration
 }
 
 func NewJWTManager(secretKey []byte, accessTTL, refreshTTL time.Duration) *JWTManager {
 	return &JWTManager{
 		secretKey:  secretKey,
-		accessTTL:  accessTTL,
-		refreshTTL: refreshTTL,
+		AccessTTL:  accessTTL,
+		RefreshTTL: refreshTTL,
 	}
 }
 
@@ -32,7 +32,7 @@ func (m *JWTManager) GenerateTokens(userID string) (string, string, error) {
 	accessClaims := Claims{
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(m.accessTTL)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(m.AccessTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
@@ -45,7 +45,7 @@ func (m *JWTManager) GenerateTokens(userID string) (string, string, error) {
 	refreshClaims := Claims{
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(m.refreshTTL)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(m.RefreshTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}

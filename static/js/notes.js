@@ -4,7 +4,6 @@ const NotesApp = function () {
       logoutBtn: document.querySelector(".js-logout-btn"),
       syncStatus: document.querySelector(".js-sync-status"),
       noteDeleteBtn: document.querySelector(".js-note-delete-btn"),
-      notePushBtn: document.querySelector(".js-note-push-btn"),
       noteCreateBtn: document.querySelector(".js-note-create-btn"),
       notesList: document.querySelector(".js-notes-list"),
       noteTitleInput: document.querySelector(".js-note-title-input"),
@@ -57,8 +56,7 @@ const NotesApp = function () {
                method: "POST",
                headers: { "Content-Type": "application/json" },
                body: JSON.stringify({
-                  title: this.title,
-                  content: this.content,
+                  content: await this.encrypt(),
                   version: this.version,
                }),
                keepalive: keepalive,
@@ -69,7 +67,7 @@ const NotesApp = function () {
                this.version = res.version;
                this.dirty = false;
                updateSyncStatus();
-               renderNote(this.id); // обновить маркер "•" в списке
+               formatNoteTitle(getNote(this.id)); // обновить маркер "•" в списке
                return true;
             }
          } catch (error) {
@@ -91,13 +89,39 @@ const NotesApp = function () {
                this.cancelSync();
                state.notes.delete(this.id);
                this.el.parentNode.removeChild(this.el);
-               renderNotes();
+               renderNotesTitle();
             } else {
                showError("Failed to delete note. Please try again later.");
             }
          } catch (error) {
             showError("Failed to delete note. Please try again later.");
          }
+      }
+
+      async encrypt() {
+         if (!notesKey) {
+            throw "There is no notes key";
+         }
+
+         const payload = JSON.stringify({
+            title: this.title ?? "",
+            content: this.content ?? "",
+         });
+
+         const iv = crypto.getRandomValues(new Uint8Array(NOTE_IV_BYTES));
+         const encryptedBuffer = await crypto.subtle.encrypt(
+            { name: "AES-GCM", iv },
+            notesKey,
+            new TextEncoder().encode(payload),
+         );
+
+         const combinedBuffer = new Uint8Array(
+            NOTE_IV_BYTES + encryptedBuffer.byteLength,
+         );
+         combinedBuffer.set(iv, 0);
+         combinedBuffer.set(new Uint8Array(encryptedBuffer), NOTE_IV_BYTES);
+
+         return btoa(String.fromCharCode(...combinedBuffer));
       }
    }
 
@@ -110,17 +134,9 @@ const NotesApp = function () {
          DOM.deleteModal.hidden = false;
       });
 
-      DOM.notePushBtn.addEventListener("click", async () => {
-         const note = getNote(state.activeId);
-         if (note) {
-            await note.sync();
-            renderNote(state.activeId);
-         }
-      });
-
       DOM.noteCreateBtn.addEventListener("click", () => {
          let id = createNote();
-         renderNotes();
+         renderNotesTitle();
          switchNote(id);
       });
 
@@ -173,6 +189,8 @@ const NotesApp = function () {
          });
 
          if (response.ok) {
+            notesKey = null;
+            sessionStorage.removeItem("notesKey");
             window.location.href = "/login";
          }
       } catch (error) {
@@ -188,16 +206,19 @@ const NotesApp = function () {
          if (response.ok) {
             const res = await response.json();
 
-            res.forEach((note) => {
-               const newNote = new Note(
-                  note.id,
-                  note.title,
-                  note.content,
-                  note.version,
-                  false,
-               );
-               state.notes.set(note.id, newNote);
-            });
+            await Promise.all(
+               res.map(async (note) => {
+                  const d = await decryptNote(note.content);
+                  const newNote = new Note(
+                     note.id,
+                     d.title,
+                     d.content,
+                     note.version,
+                     false,
+                  );
+                  state.notes.set(note.id, newNote);
+               }),
+            );
          } else {
             showError("Failed to load notes. Please try again later.");
          }
@@ -226,8 +247,8 @@ const NotesApp = function () {
       note.content = DOM.noteContentInput.value;
       note.dirty = true;
 
-      renderNote(state.activeId);
-      note.scheduleSync(); // Запускаем таймер именно у этой заметки
+      formatNoteTitle(note);
+      note.scheduleSync();
    }
 
    function switchNote(id) {
@@ -242,17 +263,17 @@ const NotesApp = function () {
          return;
       }
 
-      state.notes.forEach((_, id) => {
-         if (state.activeId != id) {
+      for (const id of state.notes.keys()) {
+         if (id !== state.activeId) {
             switchNote(id);
-            return;
+            break;
          }
-      });
+      }
    }
 
    // === Render ===
 
-   function renderNotes() {
+   function renderNotesTitle() {
       if (state.notes.size === 0) {
          DOM.notesList.innerHTML = "";
          return;
@@ -277,13 +298,10 @@ const NotesApp = function () {
       renderNotesActiveStatus();
    }
 
-   function renderNote(id) {
-      const note = getNote(id);
+   function formatNoteTitle(note) {
       if (!note || !note.el) return;
-
       let title = note.title || "untitled";
       if (note.dirty) title += " •";
-
       if (note.el.textContent !== title) {
          note.el.textContent = title;
       }
@@ -319,14 +337,62 @@ const NotesApp = function () {
       }
 
       let isThereDirty = false;
-      state.notes.forEach((note) => {
+      for (const note of state.notes.values()) {
          if (note.dirty) {
             isThereDirty = true;
-            return;
+            break;
          }
-      });
+      }
 
       DOM.syncStatus.textContent = isThereDirty ? "Syncing..." : "Synced";
+   }
+
+   // === Encryprion ===
+
+   const NOTE_IV_BYTES = 12;
+   let notesKey = null;
+
+   async function restoreNotesKey() {
+      const stored = sessionStorage.getItem("notesKey");
+      if (!stored) return null;
+
+      try {
+         const jwk = JSON.parse(stored);
+         notesKey = await crypto.subtle.importKey(
+            "jwk",
+            jwk,
+            { name: "AES-GCM", length: 256 },
+            true,
+            ["encrypt", "decrypt"],
+         );
+      } catch (e) {
+         sessionStorage.removeItem("notesKey");
+         notesKey = null;
+      }
+   }
+
+   async function decryptNote(base64String) {
+      if (!notesKey) {
+         throw "There is no notes key";
+      }
+
+      const combinedBuffer = new Uint8Array(
+         atob(base64String)
+            .split("")
+            .map((c) => c.charCodeAt(0)),
+      );
+
+      const iv = combinedBuffer.slice(0, NOTE_IV_BYTES);
+      const encryptedData = combinedBuffer.slice(NOTE_IV_BYTES);
+
+      const decryptedBuffer = await window.crypto.subtle.decrypt(
+         { name: "AES-GCM", iv: iv },
+         notesKey,
+         encryptedData,
+      );
+
+      const decoder = new TextDecoder();
+      return JSON.parse(decoder.decode(decryptedBuffer));
    }
 
    // === Modal for Confirmation ===
@@ -342,7 +408,8 @@ const NotesApp = function () {
    return {
       init: () => {
          bindEvents();
-         loadNotes().then(renderNotes);
+         restoreNotesKey();
+         loadNotes().then(renderNotesTitle);
       },
    };
 };
