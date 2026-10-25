@@ -48,7 +48,10 @@ const NotesApp = function () {
          return;
       }
 
-      await setNotesKey(data.password);
+      const res = await response.json();
+
+      const key = await setNotesKey(data.password, res.notesSalt);
+      if (!key) return;
       window.location.href = "/";
    }
 
@@ -76,7 +79,10 @@ const NotesApp = function () {
          return;
       }
 
-      await setNotesKey(data.password);
+      const res = await response.json();
+
+      const key = await setNotesKey(data.password, res.notesSalt);
+      if (!key) return;
       window.location.href = "/";
    }
 
@@ -86,22 +92,12 @@ const NotesApp = function () {
       DOM.errorModalBtn.focus();
    }
 
-   async function setNotesKey(password) {
-      // 1. Получаем соль с сервера
-      const response = await fetch("/api/auth/me", { method: "GET" });
-      if (!response.ok) {
-         const res = await response.text();
-         showError(response.statusText + ": " + res);
-         return null;
-      }
-      const res = await response.json();
-      const saltBase64 = res.notesSalt;
+   async function setNotesKey(password, saltBase64) {
       if (!saltBase64) {
          showError("Server did not return notesSalt");
          return null;
       }
 
-      // 2. Деривация ключа
       const enc = new TextEncoder();
       const salt = Uint8Array.from(atob(saltBase64), (c) => c.charCodeAt(0));
 
@@ -122,11 +118,10 @@ const NotesApp = function () {
          },
          keyMaterial,
          { name: "AES-GCM", length: 256 },
-         true, // ← было false: без этого экспорт невозможен
+         true,
          ["encrypt", "decrypt"],
       );
 
-      // 3. Экспортируем в JWK и сохраняем строку
       const jwk = await crypto.subtle.exportKey("jwk", key);
       sessionStorage.setItem("notesKey", JSON.stringify(jwk));
 

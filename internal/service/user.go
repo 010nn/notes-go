@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"log"
 	"notes-go/internal/domain"
@@ -53,8 +54,9 @@ func (s *UserService) Register(ctx context.Context, username, password string) e
 	}
 
 	// Find user by username
-	if user, _ := s.repo.GetByUsername(ctx, username); user != nil {
-		return domain.ErrUserAlreadyExists
+	_, err := s.repo.GetByUsername(ctx, username)
+	if err != nil && !errors.Is(err, domain.ErrUserNotFound) {
+		return fmt.Errorf("failed to get user: %w", err)
 	}
 
 	// Get password hash
@@ -83,34 +85,37 @@ func (s *UserService) Register(ctx context.Context, username, password string) e
 	return nil
 }
 
-func (s *UserService) Login(ctx context.Context, username, password string) (string, error) {
+func (s *UserService) Login(ctx context.Context, username, password string) (*domain.User, string, error) {
 
 	// Validation test
 	if username == "" {
-		return "", domain.ErrUsernameValidationFailed
+		return nil, "", domain.ErrUsernameValidationFailed
 	}
 
 	if password == "" {
-		return "", domain.ErrPasswordValidationFailed
+		return nil, "", domain.ErrPasswordValidationFailed
 	}
 
 	// Find user
 	user, err := s.repo.GetByUsername(ctx, username)
-	if user == nil {
-		return "", domain.ErrInvalidCredentials
+	if err != nil {
+		if errors.Is(err, domain.ErrUserNotFound) {
+			return nil, "", domain.ErrInvalidCredentials
+		}
+		return nil, "", fmt.Errorf("get user: %w", err)
 	}
 
 	// Check password hash
 	if err = bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password)); err != nil {
-		return "", domain.ErrInvalidCredentials
+		return nil, "", domain.ErrInvalidCredentials
 	}
 
 	// Generate JWT token
 	token, _, err := s.jwtManager.GenerateTokens(user.Username)
 	if err != nil {
 		log.Printf("error jwt: %v", err)
-		return "", fmt.Errorf("failed to generate JWT token: %w", err)
+		return nil, "", fmt.Errorf("failed to generate JWT token: %w", err)
 	}
 
-	return token, nil
+	return user, token, nil
 }

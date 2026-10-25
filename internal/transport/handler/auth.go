@@ -18,10 +18,10 @@ import (
 // DTO
 type authRequest struct {
 	Username string `json:"username" validate:"required,max=32"`
-	Password string `json:"password" validate:"required,min=3,max=64"`
+	Password string `json:"password" validate:"required,min=3,max=72"`
 }
 
-type meResponse struct {
+type authResponse struct {
 	Username  string `json:"username"`
 	NotesSalt string `json:"notesSalt"` // base64
 }
@@ -59,7 +59,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.JSON(w, http.StatusOK, meResponse{
+	response.JSON(w, http.StatusOK, authResponse{
 		Username:  user.Username,
 		NotesSalt: base64.StdEncoding.EncodeToString(user.NotesSalt),
 	})
@@ -82,7 +82,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.service.Login(r.Context(), auth.Username, auth.Password)
+	user, token, err := h.service.Login(r.Context(), auth.Username, auth.Password)
 	if err != nil {
 		response.HandleError(w, r, err)
 		return
@@ -98,7 +98,10 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteStrictMode,
 	})
 
-	w.WriteHeader(http.StatusOK)
+	response.JSON(w, http.StatusOK, authResponse{
+		Username:  user.Username,
+		NotesSalt: base64.StdEncoding.EncodeToString(user.NotesSalt),
+	})
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
@@ -139,7 +142,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.service.Login(r.Context(), auth.Username, auth.Password)
+	user, token, err := h.service.Login(r.Context(), auth.Username, auth.Password)
 	if err != nil {
 		response.HandleError(w, r, err)
 		return
@@ -155,5 +158,8 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteStrictMode,
 	})
 
-	w.WriteHeader(http.StatusOK)
+	response.JSON(w, http.StatusOK, authResponse{
+		Username:  user.Username,
+		NotesSalt: base64.StdEncoding.EncodeToString(user.NotesSalt),
+	})
 }

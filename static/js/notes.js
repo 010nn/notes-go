@@ -37,7 +37,9 @@ const NotesApp = function () {
          updateSyncStatus();
          clearTimeout(this.syncTimer);
          this.syncTimer = setTimeout(() => {
-            this.sync();
+            this.sync().then((ok) => {
+               if (!ok) this.scheduleSync();
+            });
          }, 1500);
       }
 
@@ -67,14 +69,12 @@ const NotesApp = function () {
                this.version = res.version;
                this.dirty = false;
                updateSyncStatus();
-               formatNoteTitle(getNote(this.id)); // обновить маркер "•" в списке
+               formatNoteTitle(this);
                return true;
             }
          } catch (error) {
-            if (state.activeId === this.id) {
-               updateSyncStatus("Sync Failed");
-            }
-            showError("Sync failed. Please try again later.");
+            updateSyncStatus("Sync Failed");
+            console.log("Failed sync: " + error);
          }
          return false;
       }
@@ -92,9 +92,11 @@ const NotesApp = function () {
                renderNotesTitle();
             } else {
                showError("Failed to delete note. Please try again later.");
+               console.log("Failed delete: " + (await response.text()));
             }
          } catch (error) {
             showError("Failed to delete note. Please try again later.");
+            console.log("Failed delete: " + error);
          }
       }
 
@@ -194,7 +196,7 @@ const NotesApp = function () {
             window.location.href = "/login";
          }
       } catch (error) {
-         alert(error);
+         showError("Failed to logout");
       }
    }
 
@@ -336,15 +338,9 @@ const NotesApp = function () {
          return;
       }
 
-      let isThereDirty = false;
-      for (const note of state.notes.values()) {
-         if (note.dirty) {
-            isThereDirty = true;
-            break;
-         }
-      }
+      const anyDirty = [...state.notes.values()].some((n) => n.dirty);
 
-      DOM.syncStatus.textContent = isThereDirty ? "Syncing..." : "Synced";
+      DOM.syncStatus.textContent = anyDirty ? "Syncing..." : "Synced";
    }
 
    // === Encryprion ===
@@ -406,9 +402,9 @@ const NotesApp = function () {
    // === Return ===
 
    return {
-      init: () => {
+      init: async () => {
          bindEvents();
-         restoreNotesKey();
+         await restoreNotesKey();
          loadNotes().then(renderNotesTitle);
       },
    };
