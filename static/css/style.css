@@ -1,12 +1,23 @@
+:root {
+   --background-1-color: black;
+   --background-2-color: #0d0d0d;
+   --background-3-color: #1a1a1a;
+   --background-4-color: #999;
+   --border-gray-color: #444;
+   --text-1-color: white;
+   --text-2-color: #999;
+   --text-3-color: #666666;
+}
+
 html,
 body {
    margin: 0;
    width: 100vw;
    height: 100vh;
    overflow: hidden;
-   background: #000;
-   color: #ffffff;
-   font-family: "Courier New", Courier, monospace;
+   background: var(--background-1-color);
+   color: var(--text-1-color);
+   font-family: monospace;
    font-size: 14px;
    line-height: 1.2;
 }
@@ -25,12 +36,17 @@ button {
    color: #999;
    width: 100%;
    padding: 10px;
-   margin: 5px 0;
    box-sizing: border-box;
+   outline: none;
+}
+
+[x-cloak] {
+   display: none !important;
 }
 
 /* ======================== Modal  ======================== */
 
+/* === error-modal === */
 .error-modal {
    position: fixed;
    inset: 0;
@@ -41,55 +57,41 @@ button {
    background: rgba(0, 0, 0, 0.7);
 }
 
-.error-modal[hidden] {
-   display: none;
-}
-
 .error-modal__box {
-   background: #000;
-   border: 1px solid #444;
-   padding: 20px;
+   background: var(--background-1-color);
+   border: 1px solid var(--border-gray-color);
+   border-radius: 2px;
+   padding: 16px;
    width: 90%;
    max-width: 400px;
-   color: #e0e0e0;
 }
 
 .error-modal__title {
    margin: 0 0 16px;
-   padding-bottom: 8px;
-   font-size: 1.1rem;
-   font-weight: normal;
+   padding-bottom: 5px;
    border-bottom: 1px solid #444;
 }
 
 .error-modal__text {
-   margin: 0 0 20px;
+   padding-bottom: 20px;
    font-size: 0.9rem;
-   line-height: 1.4;
-   color: #aaa;
 }
 
 .error-modal__btn {
    display: block;
-   margin-left: auto;
-   padding: 6px 16px;
-   background: #111;
-   color: #e0e0e0;
+   padding: 8px 16px;
+   background: var(--background-2-color);
    border: 1px solid #444;
-   font-family: inherit;
+   border-radius: 2px;
    font-size: 0.9rem;
    cursor: pointer;
 }
 
 .error-modal__btn:hover {
-   background: #222;
+   background: var(--background-3-color);
 }
 
-.error-modal__btn:focus {
-   outline: 1px solid #e0e0e0;
-}
-
-/* --- Блок: delete-modal --- */
+/* === delete-modal === */
 .delete-modal {
    position: fixed;
    inset: 0;
@@ -162,15 +164,96 @@ button {
 
 /* ======================== Authorization ======================== */
 
-.auth-block {
+.auth-container {
    margin: 10% auto auto auto;
-   width: 500px;
+   width: 400px;
 }
 
-.auth-block__error-message {
-   display: none;
-   color: red;
-   font-size: 16px;
+.auth-container__title {
+   text-align: center;
+   font-size: 28px;
+   font-weight: 500;
+}
+
+.auth-form div:nth-child(2) {
+   margin-top: 20px;
+}
+
+.auth-form input {
+   font-size: 1.5rem;
+   padding: 4px 6px;
+   margin-bottom: 12px;
+   border: none;
+   border-bottom: 1px solid #2c2c2e;
+   transition: border-bottom-color 0.2s ease;
+}
+
+.auth-form input:focus {
+   border-bottom-color: #ffffff;
+}
+
+.auth-form input:focus ~ label,
+.auth-form input:not(:placeholder-shown) ~ label {
+   font-size: 1rem;
+   color: #ffffff;
+   transform: translateY(-1.5rem) translateX(-400px);
+}
+
+.auth-form label {
+   position: absolute;
+   font-size: 1.5rem;
+   font-weight: 500;
+   color: #666666;
+   letter-spacing: 0.5px;
+   pointer-events: none;
+   transform: translate(-392px, 4px);
+
+   transition: all 0.2s ease;
+}
+
+.auth-form__actions {
+   margin-top: 36px;
+   display: flex;
+   flex-direction: column;
+   gap: 12px;
+}
+
+.auth-btn {
+   margin: 0 auto;
+   width: 100%;
+   padding: 12px;
+   font-size: 15px;
+   font-weight: 600;
+   border: none;
+   border-radius: 6px;
+   cursor: pointer;
+   transition: all 0.2s ease;
+   box-sizing: border-box;
+}
+
+.auth-btn__login {
+   background-color: var(--background-4-color);
+   color: #000000;
+}
+
+.auth-btn__login:hover {
+   background-color: #e5e5ea;
+   width: 98%;
+}
+
+.auth-btn__register {
+   background-color: transparent;
+   color: #666666;
+   font-weight: 500;
+}
+
+.auth-btn__register:hover {
+   color: #ffffff;
+}
+
+.auth-btn:disabled {
+   opacity: 0.5;
+   cursor: not-allowed;
 }
 
 /* ======================== Notes ======================== */
@@ -204,6 +287,7 @@ button {
 .sidebar__logout {
    align-self: end;
    font-weight: bold;
+   cursor: pointer;
 }
 
 .sidebar__logout:hover {

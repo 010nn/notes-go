@@ -1,138 +1,82 @@
-const NotesApp = function () {
-   const DOM = {
-      form: document.querySelector(".js-auth-form"),
-      btnLogin: document.querySelector(".js-auth-form-login"),
-      btnRegister: document.querySelector(".js-auth-form-register"),
-      username: document.querySelector(".js-auth-form-username"),
-      password: document.querySelector(".js-auth-form-password"),
-      errorModal: document.querySelector(".js-error-modal"),
-      errorModalText: document.querySelector(".js-error-modal__text"),
-      errorModalBtn: document.querySelector(".js-error-modal__btn"),
-   };
+import { api, ApiError } from "./pkg/api.js";
+import { createAndStoreNotesKey, CryptoError } from "./pkg/crypto.js";
 
-   function bindEvents() {
-      DOM.btnLogin.addEventListener("click", (event) => {
-         login(event);
-      });
-      DOM.btnRegister.addEventListener("click", (event) => {
-         register(event);
-      });
+document.addEventListener("alpine:init", () => {
+   Alpine.data("authApp", authApp);
+});
 
-      // Modal
-      DOM.errorModalBtn.addEventListener("click", () => {
-         DOM.errorModal.hidden = true;
-      });
-   }
-
-   async function login(event) {
-      event.preventDefault();
-
-      const data = {
-         username: DOM.username.value,
-         password: DOM.password.value,
-      };
-
-      if (data.username === "" || data.password === "") {
-         showError("Invalid username or password");
-         return;
-      }
-
-      const response = await fetch("/api/auth/login", {
-         method: "POST",
-         body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-         const res = await response.text();
-         showError(response.statusText + ": " + res);
-         return;
-      }
-
-      const res = await response.json();
-
-      const key = await setNotesKey(data.password, res.notesSalt);
-      if (!key) return;
-      window.location.href = "/";
-   }
-
-   async function register(event) {
-      event.preventDefault();
-
-      const data = {
-         username: DOM.username.value,
-         password: DOM.password.value,
-      };
-
-      if (data.username === "" || data.password === "") {
-         showError("Invalid username or password");
-         return;
-      }
-
-      const response = await fetch("/api/auth/register", {
-         method: "POST",
-         body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-         const res = await response.text();
-         showError(response.statusText + ": " + res);
-         return;
-      }
-
-      const res = await response.json();
-
-      const key = await setNotesKey(data.password, res.notesSalt);
-      if (!key) return;
-      window.location.href = "/";
-   }
-
-   function showError(message) {
-      DOM.errorModalText.textContent = message;
-      DOM.errorModal.hidden = false;
-      DOM.errorModalBtn.focus();
-   }
-
-   async function setNotesKey(password, saltBase64) {
-      if (!saltBase64) {
-         showError("Server did not return notesSalt");
-         return null;
-      }
-
-      const enc = new TextEncoder();
-      const salt = Uint8Array.from(atob(saltBase64), (c) => c.charCodeAt(0));
-
-      const keyMaterial = await crypto.subtle.importKey(
-         "raw",
-         enc.encode(password),
-         "PBKDF2",
-         false,
-         ["deriveKey"],
-      );
-
-      const key = await crypto.subtle.deriveKey(
-         {
-            name: "PBKDF2",
-            salt,
-            iterations: 600000,
-            hash: "SHA-256",
-         },
-         keyMaterial,
-         { name: "AES-GCM", length: 256 },
-         true,
-         ["encrypt", "decrypt"],
-      );
-
-      const jwk = await crypto.subtle.exportKey("jwk", key);
-      sessionStorage.setItem("notesKey", JSON.stringify(jwk));
-
-      return key;
-   }
+function authApp() {
+   const USERNAME_MIN = 1;
+   const USERNAME_MAX = 32;
+   const PASSWORD_MIN = 3;
+   const PASSWORD_MAX = 64;
 
    return {
-      init: () => {
-         bindEvents();
+      // === State ===
+      username: "",
+      password: "",
+      loading: false,
+      error: null,
+
+      init() {
+         this.$nextTick(() => this.$refs.username?.focus());
+      },
+
+      // public actions
+      async submitLogin() {
+         await this.submit(api.login);
+      },
+
+      async submitRegister() {
+         await this.submit(api.register);
+      },
+
+      closeError() {
+         this.error = null;
+      },
+
+      // internals
+      async submit(request) {
+         if (this.loading) return;
+
+         const validationError = this.validate();
+         if (validationError) {
+            this.error = validationError;
+            return;
+         }
+
+         this.loading = true;
+         this.error = null;
+
+         try {
+            const { notesSalt } = await request(this.username, this.password);
+            await createAndStoreNotesKey(this.password, notesSalt);
+            sessionStorage.setItem("username", this.username);
+            window.location.href = "/";
+         } catch (e) {
+            this.error =
+               e instanceof ApiError || e instanceof CryptoError
+                  ? e.message
+                  : "Unexpected error: " + (e?.message ?? e);
+         } finally {
+            this.loading = false;
+            this.$nextTick(() => this.$refs.errorOk?.focus());
+         }
+      },
+
+      validate() {
+         if (!this.username) return "Username is required";
+         if (this.username.length < USERNAME_MIN)
+            return `Username must be at least ${USERNAME_MIN} characters`;
+         if (this.username.length > USERNAME_MAX)
+            return `Username must be at most ${USERNAME_MAX} characters`;
+
+         if (!this.password) return "Password is required";
+         if (this.password.length < PASSWORD_MIN)
+            return `Password must be at least ${PASSWORD_MIN} characters`;
+         if (this.password.length > PASSWORD_MAX)
+            return `Password must be at most ${PASSWORD_MAX} characters`;
+         return null;
       },
    };
-};
-
-NotesApp().init();
+}

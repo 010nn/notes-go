@@ -9,48 +9,93 @@
       rel="icon"
       href="https://img.icons8.com/?size=100&id=12581&format=png&color=000000"
     />
+    <script type="module" src="static/js/auth.js"></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
   </head>
   <body>
-    <div class="auth-block">
-      <h2>Login</h2>
-      <form class="auth-form js-auth-form">
-        <div class="auth-form__input">
-          <label>Username</label>
-          <input class="js-auth-form-username" min="1" max="32" type="text" />
-        </div>
-        <div class="auth-form__button">
-          <label>Password</label>
+    <div class="auth-container" x-data="authApp">
+      <h2 class="auth-container__title">Login</h2>
+      <form
+        class="auth-form"
+        @submit.prevent="submitLogin"
+        novalidate
+        :aria-busy="loading"
+      >
+        <div class="auth-form__group">
           <input
-            class="js-auth-form-password"
-            type="password"
-            min="3"
-            max="64"
+            x-ref="username"
+            x-model.trim="username"
+            type="text"
+            autocomplete="username"
+            maxlength="32"
+            :disabled="loading"
+            placeholder=" "
+            required
           />
+          <label for="username">Username</label>
         </div>
 
-        <div class="auth-form__submit">
-          <button class="js-auth-form-login" type="submit">Login</button>
-          <button class="js-auth-form-register">Register</button>
+        <div class="auth-form__group">
+          <input
+            x-model="password"
+            type="password"
+            autocomplete="current-password"
+            minlength="3"
+            maxlength="64"
+            :disabled="loading"
+            placeholder=" "
+            required
+          />
+          <label for="password">Password</label>
+        </div>
+
+        <div class="auth-form__actions">
+          <button
+            class="auth-btn auth-btn__login"
+            type="submit"
+            :disabled="loading"
+          >
+            <span x-show="!loading">Login</span>
+            <span x-show="loading" x-cloak>…</span>
+          </button>
+          <button
+            class="auth-btn auth-btn__register"
+            type="button"
+            @click="submitRegister"
+            :disabled="loading"
+          >
+            Register
+          </button>
         </div>
       </form>
-      <div class="auth-block__error-message js-error-message"></div>
-    </div>
 
-    <div class="error-modal js-error-modal" hidden>
+      <!-- Modal Error -->
       <div
-        class="error-modal__box"
+        class="error-modal"
+        x-show="error"
+        x-cloak
+        x-transition.opacity
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="error-modal__title"
+        @keydown.escape.window="closeError"
       >
-        <h2 class="error-modal__title">error</h2>
-        <p class="error-modal__text js-error-modal__text"></p>
-        <button class="error-modal__btn js-error-modal__btn" type="button">
-          ok
-        </button>
+        <div class="error-modal__box">
+          <h3 id="error-modal__title" class="error-modal__title">Error</h3>
+          <p class="error-modal__text" x-text="error"></p>
+          <button
+            class="error-modal__btn"
+            type="button"
+            x-ref="errorOk"
+            @click="closeError"
+          >
+            OK
+          </button>
+        </div>
       </div>
     </div>
   </body>
-
-  <script src="static/js/auth.js"></script>
 </html>

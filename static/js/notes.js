@@ -1,413 +1,189 @@
-const NotesApp = function () {
-   const DOM = {
-      username: document.querySelector(".js-username"),
-      logoutBtn: document.querySelector(".js-logout-btn"),
-      syncStatus: document.querySelector(".js-sync-status"),
-      noteDeleteBtn: document.querySelector(".js-note-delete-btn"),
-      noteCreateBtn: document.querySelector(".js-note-create-btn"),
-      notesList: document.querySelector(".js-notes-list"),
-      noteTitleInput: document.querySelector(".js-note-title-input"),
-      noteContentInput: document.querySelector(".js-note-content-input"),
-      errorModal: document.querySelector(".js-error-modal"),
-      errorModalText: document.querySelector(".js-error-modal__text"),
-      errorModalBtn: document.querySelector(".js-error-modal__btn"),
-      deleteModal: document.querySelector(".js-delete-modal"),
-      deleteModalText: document.querySelector(".js-delete-modal-text"),
-      deleteModalCancelBtn: document.querySelector(".js-delete-modal-cancel"),
-      deleteModalConfirmBtn: document.querySelector(".js-delete-modal-confirm"),
-   };
+import { restoreNotesKey, encryptNote, decryptNote } from "./pkg/crypto.js";
 
-   const state = {
-      notes: new Map(),
+document.addEventListener("alpine:init", () => {
+   Alpine.data("notesApp", notesApp);
+});
+
+function notesApp() {
+   return {
+      // === State ===
+      notes: [],
       activeId: null,
-   };
+      notesKey: null,
+      syncStatus: "Synced",
+      username: "",
 
-   class Note {
-      constructor(id, title, content, version, dirty) {
-         this.id = id;
-         this.title = title;
-         this.content = content;
-         this.version = version;
-         this.dirty = dirty;
-         this.el = null;
-         this.syncTimer = null;
-      }
+      // Active note fileds
+      activeTitle: "",
+      activeContent: "",
 
-      scheduleSync() {
-         updateSyncStatus();
-         clearTimeout(this.syncTimer);
-         this.syncTimer = setTimeout(() => {
-            this.sync().then((ok) => {
-               if (!ok) this.scheduleSync();
-            });
-         }, 1500);
-      }
+      // Modals
+      errorMessage: "",
+      showErrorModal: false,
+      showDeleteModal: false,
 
-      cancelSync() {
-         clearTimeout(this.syncTimer);
-         this.syncTimer = null;
-      }
+      // === Init ===
+      async init() {
+         this.notesKey = await restoreNotesKey();
+         if (!this.notesKey) {
+            await this.logout();
+            return;
+         }
+         this.username = sessionStorage.getItem("username");
+         await this.loadNotes();
+      },
 
-      async sync(keepalive = false) {
-         if (!this.dirty) return true;
+      // === Computed ===
+      get activeNote() {
+         return this.notes.find((n) => n.id === this.activeId);
+      },
 
-         this.cancelSync();
+      // === First load ===
+      async loadNotes() {
+         try {
+            const res = await fetch("/api/notes");
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+
+            this.notes = await Promise.all(
+               data.map(async (n) => {
+                  const d = await decryptNote(n.content, this.notesKey);
+                  return {
+                     id: n.id,
+                     title: d.title,
+                     content: d.content,
+                     version: n.version,
+                     dirty: false,
+                  };
+               }),
+            );
+         } catch (e) {
+            this.showError("Failed to load notes.");
+         }
+      },
+
+      // === Create \ Delete ===
+      createNote() {
+         const id = crypto.randomUUID();
+         const note = { id, title: "", content: "", version: 0, dirty: true };
+         this.notes.push(note);
+         this.switchNote(id);
+         this.scheduleSync(note);
+      },
+
+      async deleteNote() {
+         const note = this.activeNote;
+         if (!note) return;
 
          try {
-            const response = await fetch(`/api/notes/${this.id}`, {
+            const res = await fetch(`/api/notes/${note.id}`, {
+               method: "DELETE",
+            });
+            if (res.ok) {
+               this.notes = this.notes.filter((n) => n.id !== note.id);
+               this.switchNoteAfterDeletion();
+            } else {
+               this.showError("Failed to delete note.");
+            }
+         } catch (e) {
+            this.showError("Failed to delete note.");
+         }
+         this.showDeleteModal = false;
+      },
+
+      // === Switch notes ===
+      switchNote(id) {
+         this.activeId = id;
+         const note = this.activeNote;
+         this.activeTitle = note?.title || "";
+         this.activeContent = note?.content || "";
+      },
+
+      switchNoteAfterDeletion() {
+         if (this.notes.length === 0) {
+            this.switchNote(null);
+         } else {
+            this.switchNote(this.notes[0].id);
+         }
+      },
+
+      // === Input ===
+      onInput() {
+         const note = this.activeNote;
+         if (!note) return;
+
+         note.title = this.activeTitle;
+         note.content = this.activeContent;
+         note.dirty = true;
+
+         this.scheduleSync(note);
+      },
+
+      // === Sync ===
+      scheduleSync(note) {
+         this.syncStatus = "Syncing...";
+
+         if (!this._timers) this._timers = {};
+         clearTimeout(this._timers[note.id]);
+
+         this._timers[note.id] = setTimeout(async () => {
+            await this.syncNote(note);
+         }, 1500);
+      },
+
+      async syncNote(note) {
+         if (!note.dirty) return;
+
+         try {
+            const res = await fetch(`/api/notes/${note.id}`, {
                method: "POST",
                headers: { "Content-Type": "application/json" },
                body: JSON.stringify({
-                  content: await this.encrypt(),
-                  version: this.version,
+                  content: await encryptNote(note, this.notesKey),
+                  version: note.version,
                }),
-               keepalive: keepalive,
             });
 
-            if (response.ok) {
-               const res = await response.json();
-               this.version = res.version;
-               this.dirty = false;
-               updateSyncStatus();
-               formatNoteTitle(this);
-               return true;
-            }
-         } catch (error) {
-            updateSyncStatus("Sync Failed");
-            console.log("Failed sync: " + error);
-         }
-         return false;
-      }
-
-      async delete() {
-         try {
-            const response = await fetch(`/api/notes/${this.id}`, {
-               method: "DELETE",
-            });
-
-            if (response.ok) {
-               this.cancelSync();
-               state.notes.delete(this.id);
-               this.el.parentNode.removeChild(this.el);
-               renderNotesTitle();
+            if (res.ok) {
+               const data = await res.json();
+               note.version = data.version;
+               note.dirty = false;
+               this.updateSyncStatus();
             } else {
-               showError("Failed to delete note. Please try again later.");
-               console.log("Failed delete: " + (await response.text()));
+               this.syncStatus = "Sync Failed";
+            }
+         } catch (e) {
+            this.syncStatus = "Sync Failed";
+         }
+      },
+
+      updateSyncStatus() {
+         const anyDirty = this.notes.some((n) => n.dirty);
+         this.syncStatus = anyDirty ? "Syncing..." : "Synced";
+      },
+
+      // === Error modal ===
+      showError(msg) {
+         this.errorMessage = msg;
+         this.showErrorModal = true;
+      },
+
+      // === Auth ===
+      async logout() {
+         try {
+            const response = await fetch(`/api/auth/logout`, {
+               method: "POST",
+            });
+
+            if (response.ok) {
+               this.notesKey = null;
+               sessionStorage.removeItem("notesKey");
+               sessionStorage.removeItem("username");
+               window.location.href = "/login";
             }
          } catch (error) {
-            showError("Failed to delete note. Please try again later.");
-            console.log("Failed delete: " + error);
+            this.showError("Failed to logout: " + error);
          }
-      }
-
-      async encrypt() {
-         if (!notesKey) {
-            throw "There is no notes key";
-         }
-
-         const payload = JSON.stringify({
-            title: this.title ?? "",
-            content: this.content ?? "",
-         });
-
-         const iv = crypto.getRandomValues(new Uint8Array(NOTE_IV_BYTES));
-         const encryptedBuffer = await crypto.subtle.encrypt(
-            { name: "AES-GCM", iv },
-            notesKey,
-            new TextEncoder().encode(payload),
-         );
-
-         const combinedBuffer = new Uint8Array(
-            NOTE_IV_BYTES + encryptedBuffer.byteLength,
-         );
-         combinedBuffer.set(iv, 0);
-         combinedBuffer.set(new Uint8Array(encryptedBuffer), NOTE_IV_BYTES);
-
-         return btoa(String.fromCharCode(...combinedBuffer));
-      }
-   }
-
-   function bindEvents() {
-      DOM.logoutBtn.addEventListener("click", logout);
-
-      // Sidebar btns
-      DOM.noteDeleteBtn.addEventListener("click", () => {
-         if (!state.activeId) return;
-         DOM.deleteModal.hidden = false;
-      });
-
-      DOM.noteCreateBtn.addEventListener("click", () => {
-         let id = createNote();
-         renderNotesTitle();
-         switchNote(id);
-      });
-
-      // Note input
-      DOM.noteTitleInput.addEventListener("input", updateRenderActiveNote);
-      DOM.noteContentInput.addEventListener("input", updateRenderActiveNote);
-
-      // Modal
-      DOM.errorModalBtn.addEventListener("click", () => {
-         DOM.errorModal.hidden = true;
-      });
-
-      DOM.deleteModalCancelBtn.addEventListener("click", () => {
-         DOM.deleteModal.hidden = true;
-      });
-
-      DOM.deleteModalConfirmBtn.addEventListener("click", async () => {
-         const note = getNote(state.activeId);
-         if (!note) return;
-
-         await note.delete();
-         switchNoteAfterDeletion();
-         DOM.deleteModal.hidden = true;
-      });
-
-      document.addEventListener("keydown", (event) => {
-         if (event.key === "Escape") {
-            if (!DOM.errorModal.hidden) DOM.errorModal.hidden = true;
-            if (!DOM.deleteModal.hidden) DOM.deleteModal.hidden = true;
-         }
-      });
-
-      // Sync before close tab
-      window.addEventListener("beforeunload", () => {
-         state.notes.forEach((note) => {
-            if (note.dirty) {
-               note.cancelSync();
-               note.sync(true); // keepalive = true
-            }
-         });
-      });
-   }
-
-   // === Transport ===
-
-   async function logout() {
-      try {
-         const response = await fetch(`/api/auth/logout`, {
-            method: "POST",
-         });
-
-         if (response.ok) {
-            notesKey = null;
-            sessionStorage.removeItem("notesKey");
-            window.location.href = "/login";
-         }
-      } catch (error) {
-         showError("Failed to logout");
-      }
-   }
-
-   async function loadNotes() {
-      state.notes.clear();
-      try {
-         const response = await fetch(`/api/notes`);
-
-         if (response.ok) {
-            const res = await response.json();
-
-            await Promise.all(
-               res.map(async (note) => {
-                  const d = await decryptNote(note.content);
-                  const newNote = new Note(
-                     note.id,
-                     d.title,
-                     d.content,
-                     note.version,
-                     false,
-                  );
-                  state.notes.set(note.id, newNote);
-               }),
-            );
-         } else {
-            showError("Failed to load notes. Please try again later.");
-         }
-      } catch (error) {
-         showError("Failed to load notes. Please try again later.");
-      }
-   }
-
-   // === Service ===
-
-   function getNote(id) {
-      return state.notes.get(id);
-   }
-
-   function createNote() {
-      let note = new Note(crypto.randomUUID(), "", "", 0, true);
-      state.notes.set(note.id, note);
-      return note.id;
-   }
-
-   function updateRenderActiveNote() {
-      const note = getNote(state.activeId);
-      if (!note) return;
-
-      note.title = DOM.noteTitleInput.value;
-      note.content = DOM.noteContentInput.value;
-      note.dirty = true;
-
-      formatNoteTitle(note);
-      note.scheduleSync();
-   }
-
-   function switchNote(id) {
-      state.activeId = id;
-      renderNoteContent(id);
-      renderNotesActiveStatus();
-   }
-
-   function switchNoteAfterDeletion() {
-      if (state.notes.size === 0) {
-         switchNote(null);
-         return;
-      }
-
-      for (const id of state.notes.keys()) {
-         if (id !== state.activeId) {
-            switchNote(id);
-            break;
-         }
-      }
-   }
-
-   // === Render ===
-
-   function renderNotesTitle() {
-      if (state.notes.size === 0) {
-         DOM.notesList.innerHTML = "";
-         return;
-      }
-
-      state.notes.forEach((note, id) => {
-         if (note.el === null) {
-            const newNote = document.createElement("a");
-            newNote.className = "js-note-item note-item";
-            newNote.addEventListener("click", () => switchNote(id));
-            DOM.notesList.appendChild(newNote);
-            note.el = newNote;
-         }
-
-         let title = note.title || "untitled";
-         if (note.dirty) title += " •";
-         if (note.el.textContent !== title) {
-            note.el.textContent = title;
-         }
-      });
-
-      renderNotesActiveStatus();
-   }
-
-   function formatNoteTitle(note) {
-      if (!note || !note.el) return;
-      let title = note.title || "untitled";
-      if (note.dirty) title += " •";
-      if (note.el.textContent !== title) {
-         note.el.textContent = title;
-      }
-   }
-
-   function renderNotesActiveStatus() {
-      state.notes.forEach((note) => {
-         if (!note.el) return;
-         if (note.id === state.activeId) {
-            note.el.classList.add("active");
-         } else {
-            note.el.classList.remove("active");
-         }
-      });
-   }
-
-   function renderNoteContent(id) {
-      const note = getNote(id);
-      if (!note) {
-         DOM.noteTitleInput.value = "";
-         DOM.noteContentInput.value = "";
-         return;
-      }
-
-      DOM.noteTitleInput.value = note.title;
-      DOM.noteContentInput.value = note.content;
-   }
-
-   function updateSyncStatus(message = "") {
-      if (message != "") {
-         DOM.syncStatus.textContent = message;
-         return;
-      }
-
-      const anyDirty = [...state.notes.values()].some((n) => n.dirty);
-
-      DOM.syncStatus.textContent = anyDirty ? "Syncing..." : "Synced";
-   }
-
-   // === Encryprion ===
-
-   const NOTE_IV_BYTES = 12;
-   let notesKey = null;
-
-   async function restoreNotesKey() {
-      const stored = sessionStorage.getItem("notesKey");
-      if (!stored) return null;
-
-      try {
-         const jwk = JSON.parse(stored);
-         notesKey = await crypto.subtle.importKey(
-            "jwk",
-            jwk,
-            { name: "AES-GCM", length: 256 },
-            true,
-            ["encrypt", "decrypt"],
-         );
-      } catch (e) {
-         sessionStorage.removeItem("notesKey");
-         notesKey = null;
-      }
-   }
-
-   async function decryptNote(base64String) {
-      if (!notesKey) {
-         throw "There is no notes key";
-      }
-
-      const combinedBuffer = new Uint8Array(
-         atob(base64String)
-            .split("")
-            .map((c) => c.charCodeAt(0)),
-      );
-
-      const iv = combinedBuffer.slice(0, NOTE_IV_BYTES);
-      const encryptedData = combinedBuffer.slice(NOTE_IV_BYTES);
-
-      const decryptedBuffer = await window.crypto.subtle.decrypt(
-         { name: "AES-GCM", iv: iv },
-         notesKey,
-         encryptedData,
-      );
-
-      const decoder = new TextDecoder();
-      return JSON.parse(decoder.decode(decryptedBuffer));
-   }
-
-   // === Modal for Confirmation ===
-
-   function showError(message) {
-      DOM.errorModalText.textContent = message;
-      DOM.errorModal.hidden = false;
-      DOM.errorModalBtn.focus();
-   }
-
-   // === Return ===
-
-   return {
-      init: async () => {
-         bindEvents();
-         await restoreNotesKey();
-         loadNotes().then(renderNotesTitle);
       },
    };
-};
-
-NotesApp().init();
+}
