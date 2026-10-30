@@ -31,6 +31,10 @@ function notesApp() {
          }
          this.username = sessionStorage.getItem("username");
          await this.loadNotes();
+
+         window.addEventListener("beforeunload", async () => {
+            await this.forceSync();
+         });
       },
 
       // === Computed ===
@@ -157,6 +161,33 @@ function notesApp() {
          }
       },
 
+      async forceSync() {
+         if (this._timers) {
+            for (const timerId of Object.values(this._timers)) {
+               clearTimeout(timerId);
+            }
+         }
+
+         for (const note of this.notes) {
+            if (!note.dirty) continue;
+
+            note.dirty = false;
+            const encryptedContent = await encryptNote(note, this.notesKey);
+
+            const blob = new Blob(
+               [
+                  JSON.stringify({
+                     content: encryptedContent,
+                     version: note.version,
+                  }),
+               ],
+               { type: "application/json" },
+            );
+
+            navigator.sendBeacon(`/api/notes/${note.id}`, blob);
+         }
+      },
+
       updateSyncStatus() {
          const anyDirty = this.notes.some((n) => n.dirty);
          this.syncStatus = anyDirty ? "Syncing..." : "Synced";
@@ -170,6 +201,7 @@ function notesApp() {
 
       // === Auth ===
       async logout() {
+         await this.forceSync();
          try {
             const response = await fetch(`/api/auth/logout`, {
                method: "POST",

@@ -40,7 +40,7 @@ func (m *Middleware) StaticSmartCache(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 
-		if strings.HasSuffix(path, ".css") {
+		if strings.HasSuffix(path, ".css") || strings.HasSuffix(path, ".js") {
 			w.Header().Set("Cache-Control", "public, max-age=900, immutable")
 		} else {
 			w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate")

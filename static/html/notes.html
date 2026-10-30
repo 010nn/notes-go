@@ -10,13 +10,14 @@
       href="https://img.icons8.com/?size=100&id=12581&format=png&color=000000"
     />
     <script type="module" src="static/js/notes.js"></script>
-    <script
-      defer
-      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
-    ></script>
+    <script defer src="static/js/pkg/alpine.js"></script>
   </head>
   <body>
-    <div class="app" x-data="notesApp()" x-init="init()">
+    <div class="app" x-data="notesApp()">
+      <div
+        @visibilitychange.window="document.visibilityState === 'hidden' && forceSync()"
+      ></div>
+
       <div class="sidebar">
         <div class="sidebar__header">
           <span>hi, <span x-text="username"></span>!</span>
