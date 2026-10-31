@@ -14,3 +14,5 @@
 .env
 pgdata
 .zed
+server.crt
+server.key

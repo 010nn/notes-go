@@ -10,7 +10,8 @@ type Note struct {
 	Username  string
 	Title     string
 	Content   string
-	UpdatedAt time.Time
-	CreatedAt time.Time
+	Position  int64
 	Version   int64
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }

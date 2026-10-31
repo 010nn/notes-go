@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"notes-go/internal/config"
 
+	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
 )

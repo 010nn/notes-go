@@ -14,6 +14,7 @@ type noteRepository interface {
 	Get(ctx context.Context, username string, id uuid.UUID) (*domain.Note, error)
 	Save(ctx context.Context, note *domain.Note, oldVersion int64) (*domain.Note, error)
 	Delete(ctx context.Context, username string, id uuid.UUID) error
+	Reorder(ctx context.Context, username string, ids []uuid.UUID) error
 }
 
 // === Service ===
@@ -70,4 +71,8 @@ func (s *NoteService) Save(ctx context.Context, username string, id uuid.UUID, t
 
 func (s *NoteService) Delete(ctx context.Context, username string, id uuid.UUID) error {
 	return s.repo.Delete(ctx, username, id)
+}
+
+func (s *NoteService) Reorder(ctx context.Context, username string, ids []uuid.UUID) error {
+	return s.repo.Reorder(ctx, username, ids)
 }

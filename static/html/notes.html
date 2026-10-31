@@ -46,6 +46,11 @@
               :class="{ 'active': note.id === activeId }"
               @click="switchNote(note.id)"
               x-text="(note.title || 'untitled') + (note.dirty ? ' •' : '')"
+              draggable="true"
+              @dragstart="onDragStart(note.id, $event)"
+              @dragover="onDragOver($event)"
+              @drop="onDrop(note.id, $event)"
+              @dragend="onDragEnd()"
             ></a>
           </template>
         </div>

@@ -12,6 +12,8 @@ function notesApp() {
       notesKey: null,
       syncStatus: "Synced",
       username: "",
+      draggedId: null,
+      orderChanged: false,
 
       // Active note fileds
       activeTitle: "",
@@ -73,6 +75,7 @@ function notesApp() {
          this.notes.push(note);
          this.switchNote(id);
          this.scheduleSync(note);
+         this.orderChanged = true;
       },
 
       async deleteNote() {
@@ -93,6 +96,7 @@ function notesApp() {
             this.showError("Failed to delete note.");
          }
          this.showDeleteModal = false;
+         this.orderChanged = true;
       },
 
       // === Switch notes ===
@@ -161,13 +165,52 @@ function notesApp() {
          }
       },
 
+      async syncOrder() {
+         if (!this.orderChanged) return;
+         try {
+            const res = await fetch("/api/notes/reorder", {
+               method: "POST",
+               headers: { "Content-Type": "application/json" },
+               body: JSON.stringify({
+                  order: this.notes.map((note) => note.id),
+               }),
+               keepalive,
+            });
+            if (!res.ok) {
+               throw new Error();
+            } else {
+               this.orderChanged = false;
+            }
+         } catch (e) {
+            this.showError("Failed to save order.");
+            // await this.loadNotes();
+         }
+      },
+
       async forceSync() {
+         // Save order
+         if (this.orderChanged) {
+            navigator.sendBeacon(
+               `/api/notes/reorder`,
+               new Blob(
+                  [
+                     JSON.stringify({
+                        order: this.notes.map((note) => note.id),
+                     }),
+                  ],
+                  { type: "application/json" },
+               ),
+            );
+         }
+
+         // Clear notes timeout
          if (this._timers) {
             for (const timerId of Object.values(this._timers)) {
                clearTimeout(timerId);
             }
          }
 
+         // Save changed notes
          for (const note of this.notes) {
             if (!note.dirty) continue;
 
@@ -191,6 +234,33 @@ function notesApp() {
       updateSyncStatus() {
          const anyDirty = this.notes.some((n) => n.dirty);
          this.syncStatus = anyDirty ? "Syncing..." : "Synced";
+      },
+
+      // === Drag & drop ===
+      onDragStart(id, e) {
+         this.draggedId = id;
+         e.dataTransfer.effectAllowed = "move";
+         e.dataTransfer.setData("text/plain", id);
+      },
+      onDragOver(e) {
+         e.preventDefault();
+      },
+      onDrop(targetId, e) {
+         e.preventDefault();
+         const fromId = this.draggedId;
+         this.draggedId = null;
+         if (!fromId || fromId === targetId) return;
+
+         const fromIdx = this.notes.findIndex((note) => note.id == fromId);
+         const toIdx = this.notes.findIndex((note) => note.id == targetId);
+         if (fromIdx === -1 || toIdx === -1) return;
+
+         const [moved] = this.notes.splice(fromIdx, 1);
+         this.notes.splice(toIdx, 0, moved);
+         this.orderChanged = true;
+      },
+      onDragEnd() {
+         this.draggedId = null;
       },
 
       // === Error modal ===

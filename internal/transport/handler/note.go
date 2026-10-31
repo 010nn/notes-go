@@ -20,6 +20,10 @@ type updateNoteRequest struct {
 	Version int64  `json:"version"`
 }
 
+type reorderNotesRequest struct {
+	Order []uuid.UUID `json:"order"`
+}
+
 type noteVersionResponse struct {
 	ID        uuid.UUID `json:"id"`
 	UpdatedAt time.Time `json:"updatedAt"`
@@ -148,6 +152,33 @@ func (h *NotesHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.Delete(r.Context(), username, id); err != nil {
+		response.HandleError(w, r, err)
+		return
+	}
+
+	response.JSON(w, http.StatusOK, nil)
+}
+
+// POST /notes/reorder
+func (h *NotesHandler) Reorder(w http.ResponseWriter, r *http.Request) {
+
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	defer r.Body.Close()
+
+	ctx := r.Context()
+	username, ok := transport.UserFromCtx(ctx)
+	if !ok {
+		response.HandleError(w, r, domain.ErrUserNotFound)
+		return
+	}
+
+	var req reorderNotesRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.HandleError(w, r, domain.ErrInvalidJSON)
+		return
+	}
+
+	if err := h.service.Reorder(ctx, username, req.Order); err != nil {
 		response.HandleError(w, r, err)
 		return
 	}

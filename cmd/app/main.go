@@ -95,6 +95,7 @@ func main() {
 			r.Get("/notes", notesHandler.List)
 			r.Post(apiNoteId, notesHandler.Update)
 			r.Delete(apiNoteId, notesHandler.Delete)
+			r.Post("/notes/reorder", notesHandler.Reorder)
 		})
 	})
 
@@ -116,7 +117,7 @@ func main() {
 	}
 
 	slog.Info("Server running on http://127.0.0.1:" + cfg.Port)
-	if err := server.ListenAndServe(); err != nil {
+	if err := server.ListenAndServeTLS("server.crt", "server.key"); err != nil {
 		slog.Error("run server", "err", err)
 		return
 	}

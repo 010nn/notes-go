@@ -23,9 +23,10 @@ func NewNoteRepository(db *pgxpool.Pool) *NoteRepository {
 
 func (r *NoteRepository) List(ctx context.Context, username string) ([]*domain.Note, error) {
 	query := `
-		SELECT id, username, title, content, updated_at, created_at, version
+		SELECT id, username, title, content, version, created_at, updated_at
 		FROM notes
 		WHERE username = $1
+		ORDER BY position
 	`
 
 	rows, err := r.db.Query(ctx, query, username)
@@ -35,7 +36,7 @@ func (r *NoteRepository) List(ctx context.Context, username string) ([]*domain.N
 
 	notes, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (*domain.Note, error) {
 		var n domain.Note
-		err := row.Scan(&n.ID, &n.Username, &n.Title, &n.Content, &n.UpdatedAt, &n.CreatedAt, &n.Version)
+		err := row.Scan(&n.ID, &n.Username, &n.Title, &n.Content, &n.Version, &n.CreatedAt, &n.UpdatedAt)
 		return &n, err
 	})
 
@@ -113,6 +114,36 @@ func (r *NoteRepository) Delete(ctx context.Context, username string, id uuid.UU
 	_, err := r.db.Exec(ctx, query, id, username)
 	if err != nil {
 		return fmt.Errorf("db note repo Delete(): %w", err)
+	}
+
+	return nil
+}
+
+func (r *NoteRepository) Reorder(ctx context.Context, username string, ids []uuid.UUID) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	query := `
+	UPDATE notes
+	SET position = $1
+	WHERE id = $2 AND username = $3
+	`
+
+	batch := &pgx.Batch{}
+
+	for i, id := range ids {
+		batch.Queue(query, i, id, username)
+	}
+
+	br := r.db.SendBatch(ctx, batch)
+	defer br.Close()
+
+	for range ids {
+		_, err := br.Exec()
+		if err != nil {
+			return fmt.Errorf("db reorder: %w", err)
+		}
 	}
 
 	return nil
