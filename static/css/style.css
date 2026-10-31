@@ -1,12 +1,13 @@
 :root {
-   --background-1-color: black;
-   --background-2-color: #0d0d0d;
-   --background-3-color: #1a1a1a;
-   --background-4-color: #999;
-   --border-gray-color: #444;
-   --text-1-color: white;
-   --text-2-color: #999;
-   --text-3-color: #666666;
+   --background-1-color: #0a0a0c;
+   --background-2-color: #101014;
+   --background-3-color: #9a9aa2;
+   --border-gray-color: #34343a;
+   --text-1-color: #e8e8ec;
+   --text-2-color: #8f8f98;
+   --accent-color: #8b8bf0;
+   --accent-soft: rgba(139, 139, 240, 0.5);
+   --border-subtle: rgba(255, 255, 255, 0.07);
 }
 
 html,
@@ -15,37 +16,103 @@ body {
    width: 100vw;
    height: 100vh;
    overflow: hidden;
-   background: var(--background-1-color);
    color: var(--text-1-color);
-   font-family: monospace;
+   font-family:
+      ui-monospace, "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
    font-size: 14px;
    line-height: 1.2;
+   background:
+      radial-gradient(
+         1100px 700px at 82% -12%,
+         rgba(139, 139, 240, 0.07),
+         transparent 60%
+      ),
+      radial-gradient(
+         900px 650px at -8% 112%,
+         rgba(96, 118, 160, 0.09),
+         transparent 55%
+      ),
+      var(--background-1-color);
 }
 
-*::-webkit-scrollbar {
-   display: none;
+::selection {
+   background: rgba(139, 139, 240, 0.3);
 }
+
 * {
    scrollbar-width: thin;
+   scrollbar-color: #26262c transparent;
    -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+   width: 8px;
+   height: 8px;
+}
+*::-webkit-scrollbar-track {
+   background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+   background: #26262c;
+   border-radius: 8px;
+}
+*::-webkit-scrollbar-thumb:hover {
+   background: #32323a;
 }
 
 input,
 button {
+   font-family: inherit;
    background: transparent;
-   color: #999;
+   color: var(--text-1-color);
    width: 100%;
    padding: 10px;
    box-sizing: border-box;
    outline: none;
 }
 
+button:focus-visible {
+   outline: 1px solid var(--accent-soft);
+   outline-offset: 2px;
+}
+
 [x-cloak] {
    display: none !important;
 }
 
-/* ======================== Modal  ======================== */
+@keyframes growFromLeft {
+   from {
+      opacity: 0;
+      transform: translateX(10px);
+      scale: 0.9;
+   }
+   to {
+      opacity: 1;
+      transform: translateX(0);
+   }
+}
 
+@keyframes modalIn {
+   from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.98);
+   }
+   to {
+      opacity: 1;
+      transform: none;
+   }
+}
+
+@keyframes pulse {
+   0%,
+   100% {
+      opacity: 0.35;
+   }
+   50% {
+      opacity: 1;
+   }
+}
+
+/* ======================== Modal ======================== */
 /* === error-modal === */
 .error-modal {
    position: fixed;
@@ -54,41 +121,50 @@ button {
    display: flex;
    align-items: center;
    justify-content: center;
-   background: rgba(0, 0, 0, 0.7);
+   background: rgba(5, 5, 8, 0.65);
+   backdrop-filter: blur(4px);
 }
 
 .error-modal__box {
-   background: var(--background-1-color);
-   border: 1px solid var(--border-gray-color);
-   border-radius: 2px;
-   padding: 16px;
+   background: linear-gradient(180deg, #151518, #0f0f12);
+   border: 1px solid var(--border-subtle);
+   border-radius: 12px;
+   padding: 20px;
    width: 90%;
    max-width: 400px;
+   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+   animation: modalIn 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .error-modal__title {
    margin: 0 0 16px;
-   padding-bottom: 5px;
-   border-bottom: 1px solid #444;
+   padding-bottom: 8px;
+   border-bottom: 1px solid var(--border-subtle);
 }
 
 .error-modal__text {
    padding-bottom: 20px;
    font-size: 0.9rem;
+   color: var(--text-2-color);
+   line-height: 1.5;
 }
 
 .error-modal__btn {
    display: block;
    padding: 8px 16px;
-   background: var(--background-2-color);
-   border: 1px solid #444;
-   border-radius: 2px;
+   background: #17171b;
+   border: 1px solid var(--border-gray-color);
+   border-radius: 8px;
    font-size: 0.9rem;
    cursor: pointer;
+   transition:
+      background 0.2s ease,
+      border-color 0.2s ease;
 }
 
 .error-modal__btn:hover {
-   background: var(--background-3-color);
+   background: #1f1f25;
+   border-color: #4a4a52;
 }
 
 /* === delete-modal === */
@@ -99,7 +175,8 @@ button {
    display: flex;
    align-items: center;
    justify-content: center;
-   background: rgba(0, 0, 0, 0.7);
+   background: rgba(5, 5, 8, 0.65);
+   backdrop-filter: blur(4px);
 }
 
 .delete-modal[hidden] {
@@ -107,27 +184,30 @@ button {
 }
 
 .delete-modal__box {
-   background: #000;
-   border: 1px solid #444;
-   padding: 20px;
+   background: linear-gradient(180deg, #151518, #0f0f12);
+   border: 1px solid var(--border-subtle);
+   border-radius: 12px;
+   padding: 22px;
    width: 90%;
    max-width: 400px;
-   color: #e0e0e0;
+   color: var(--text-1-color);
+   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+   animation: modalIn 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .delete-modal__title {
    margin: 0 0 16px;
-   padding-bottom: 8px;
+   padding-bottom: 10px;
    font-size: 1.1rem;
    font-weight: normal;
-   border-bottom: 1px solid #444;
+   border-bottom: 1px solid var(--border-subtle);
 }
 
 .delete-modal__text {
    margin: 0 0 20px;
    font-size: 0.9rem;
-   line-height: 1.4;
-   color: #aaa;
+   line-height: 1.5;
+   color: var(--text-2-color);
 }
 
 .delete-modal__actions {
@@ -137,42 +217,59 @@ button {
 }
 
 .delete-modal__btn {
-   padding: 6px 16px;
-   background: #111;
-   color: #e0e0e0;
-   border: 1px solid #444;
+   width: auto;
+   padding: 8px 18px;
+   background: #17171b;
+   color: var(--text-1-color);
+   border: 1px solid var(--border-gray-color);
+   border-radius: 8px;
    font-size: 0.9rem;
    cursor: pointer;
+   transition:
+      background 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease;
 }
 
 .delete-modal__btn:hover {
-   background: #222;
+   background: #1f1f25;
 }
 
 .delete-modal__btn:focus {
-   outline: 1px solid #e0e0e0;
+   outline: 1px solid var(--accent-soft);
 }
 
 .delete-modal__btn--delete {
    color: #ff6b6b;
-   border-color: #663333;
+   border-color: #5c2a2e;
 }
 
 .delete-modal__btn--delete:hover {
-   background: #1a0000;
+   background: #1d0e10;
+   border-color: #7c3a3f;
 }
 
 /* ======================== Authorization ======================== */
 
 .auth-container {
    margin: 10% auto auto auto;
-   width: 400px;
+   width: calc(100% - 32px);
+   max-width: 400px;
 }
 
 .auth-container__title {
    text-align: center;
    font-size: 28px;
    font-weight: 500;
+   letter-spacing: 3px;
+   background: linear-gradient(120deg, #f0f0f4 20%, #8a8a96 90%);
+   -webkit-background-clip: text;
+   background-clip: text;
+   color: transparent;
+}
+
+.auth-form div {
+   position: relative;
 }
 
 .auth-form div:nth-child(2) {
@@ -184,30 +281,30 @@ button {
    padding: 4px 6px;
    margin-bottom: 12px;
    border: none;
-   border-bottom: 1px solid #2c2c2e;
-   transition: border-bottom-color 0.2s ease;
+   border-bottom: 1px solid #2c2c33;
+   transition: border-bottom-color 0.25s ease;
 }
 
 .auth-form input:focus {
-   border-bottom-color: #ffffff;
+   border-bottom-color: var(--accent-color);
 }
 
 .auth-form input:focus ~ label,
 .auth-form input:not(:placeholder-shown) ~ label {
    font-size: 1rem;
-   color: #ffffff;
-   transform: translateY(-1.5rem) translateX(-400px);
+   color: var(--text-1-color);
+   transform: translateY(-1.5rem);
 }
 
 .auth-form label {
    position: absolute;
+   left: 6px;
+   top: 4px;
    font-size: 1.5rem;
    font-weight: 500;
-   color: #666666;
+   color: var(--text-2-color);
    letter-spacing: 0.5px;
    pointer-events: none;
-   transform: translate(-392px, 4px);
-
    transition: all 0.2s ease;
 }
 
@@ -225,39 +322,40 @@ button {
    font-size: 15px;
    font-weight: 600;
    border: none;
-   border-radius: 6px;
+   border-radius: 8px;
    cursor: pointer;
    transition: all 0.2s ease;
    box-sizing: border-box;
 }
 
 .auth-btn__login {
-   background-color: var(--background-4-color);
-   color: #000000;
+   background: linear-gradient(180deg, #d4d4db, #adadb8);
+   color: #0a0a0c;
 }
 
 .auth-btn__login:hover {
-   background-color: #e5e5ea;
-   width: 98%;
+   background: linear-gradient(180deg, #e6e6ec, #bdbdc8);
+   box-shadow: 0 6px 20px rgba(200, 200, 220, 0.12);
+   transform: translateY(-1px);
 }
 
 .auth-btn__register {
    background-color: transparent;
-   color: #666666;
+   color: var(--text-2-color);
    font-weight: 500;
 }
 
 .auth-btn__register:hover {
-   color: #ffffff;
+   color: var(--accent-color);
 }
 
 .auth-btn:disabled {
    opacity: 0.5;
    cursor: not-allowed;
+   transform: none;
 }
 
 /* ======================== Notes ======================== */
-
 .app {
    display: flex;
    height: 100vh;
@@ -267,14 +365,17 @@ button {
 
 .sidebar {
    width: 200px;
-   border-right: 1px solid #333;
+   display: flex;
+   flex-direction: column;
+   border-right: 1px solid var(--border-subtle);
 }
 
 .sidebar__header {
+   color: var(--text-2-color);
    padding: 5px;
-
    display: flex;
    justify-content: space-between;
+   align-items: center;
 }
 
 .sidebar__sync-status {
@@ -282,15 +383,29 @@ button {
    text-align: end;
    padding: 5px;
    margin-top: 5px;
+   color: var(--text-2-color);
+}
+
+.sidebar__sync-status::before {
+   content: "";
+   display: inline-block;
+   width: 6px;
+   height: 6px;
+   margin-right: 6px;
+   border-radius: 50%;
+   background: var(--accent-color);
+   animation: pulse 2.4s ease-in-out infinite;
 }
 
 .sidebar__logout {
    align-self: end;
    font-weight: bold;
    cursor: pointer;
+   transition: color 0.2s ease;
 }
 
 .sidebar__logout:hover {
+   color: #ff8080;
    text-decoration: underline;
 }
 
@@ -298,7 +413,7 @@ button {
    display: flex;
    justify-content: space-between;
    align-items: center;
-   border-bottom: 1px solid #333;
+   border-bottom: 1px solid var(--border-subtle);
    width: 100%;
 }
 
@@ -311,6 +426,10 @@ button {
 
 .sidebar__title {
    font-size: 26px;
+   background: linear-gradient(120deg, #f0f0f4 70%, #8a8a96);
+   -webkit-background-clip: text;
+   background-clip: text;
+   color: transparent;
 }
 
 .sidebar__btn {
@@ -318,63 +437,118 @@ button {
    margin: 0;
    width: 32px;
    height: 32px;
-   border: 1px solid #333;
+   border: none;
+   border-radius: 8px;
    align-items: center;
    justify-content: center;
    font-size: 20px;
+   color: var(--text-2-color);
    cursor: pointer;
    transition:
       background 0.15s,
-      color 0.15s;
+      color 0.15s,
+      transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .sidebar__btn:hover {
-   background: #1a1a1a;
+   background: #1a1a20;
+   color: var(--text-1-color);
+   transform: rotate(180deg);
+}
+
+.sidebar__btn:active {
+   transform: rotate(180deg) scale(0.9);
 }
 
 .sidebar__list {
+   --note-h: 40px;
+   --note-gap: 6px;
+   --highlight-y: -100px;
    display: flex;
    flex-direction: column;
    flex: 1;
    overflow-y: auto;
+   position: relative;
+}
+
+.sidebar__list::before {
+   content: "";
+   position: absolute;
+   z-index: 0;
+   top: 0;
+   left: 6px;
+   right: 0;
+   height: var(--note-h);
+   border-start-start-radius: 8px;
+   border-end-start-radius: 8px;
+   border-left: 2px solid var(--accent-soft);
+   background: linear-gradient(90deg, #202027, #17171c);
+   transform: translateY(var(--highlight-y, -100px));
+   transition: transform 0.45s cubic-bezier(0.3, 0.86, 0.3, 1);
+   pointer-events: none;
 }
 
 .note-item {
-   margin: 8px 0 0 5px;
-   padding: 8px 10px;
+   position: relative;
+   z-index: 1;
+   box-sizing: border-box;
+   height: var(--note-h);
+   margin: var(--note-gap) 0 0 6px;
+   padding: 10px;
+   line-height: 20px;
    cursor: pointer;
-   transition: background 0.15s;
-   border-start-start-radius: 5px;
-   border-end-start-radius: 5px;
-   word-break: break-word;
+   border-start-start-radius: 8px;
+   border-end-start-radius: 8px;
+   white-space: nowrap;
+   overflow: hidden;
+   text-overflow: ellipsis;
+   color: var(--text-2-color);
+   transition:
+      background 0.2s ease,
+      color 0.2s ease;
+   animation: growFromLeft 0.6s cubic-bezier(0.25, 1, 0.5, 1) backwards;
 }
 
 .note-item:hover {
-   background: #444;
+   background: rgba(255, 255, 255, 0.035);
+   color: var(--text-1-color);
 }
 
 .note-item.active {
-   background: #1a1a1a;
+   background: transparent;
+   color: var(--text-1-color);
+}
+
+.note-item.active:hover {
+   background: rgba(255, 255, 255, 0.02);
 }
 
 .note-panel {
    flex: 1;
-   background-color: #0d0d0d;
    display: flex;
    flex-direction: column;
    overflow: hidden;
-   padding: 30px;
+   padding: 30px 20px;
+   border-left: 1px solid var(--border-subtle);
+   background-color: var(--background-2-color);
+   background-image:
+      radial-gradient(
+         900px 480px at 88% -10%,
+         rgba(139, 139, 240, 0.055),
+         transparent 60%
+      ),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 40%);
 }
 
 .note-panel__title {
    font-size: 28px;
    font-weight: 600;
-   color: #ffffff;
+   color: var(--text-1-color);
    margin-bottom: 24px;
    border: none;
    background: transparent;
-   /*width: 100%;*/
    padding: 0;
+   caret-color: var(--accent-color);
 }
 
 .note-panel__title:focus {
@@ -385,33 +559,113 @@ button {
    flex: 1;
    background: transparent;
    font-size: 1rem;
+   line-height: 1.7;
    resize: none;
    outline: none;
    user-select: text;
-   color: #999;
+   color: var(--text-1-color);
    border: none;
+   caret-color: var(--accent-color);
 }
 
-.confirmation-modal {
-   position: fixed;
-   top: 50%;
-   left: 50%;
-   transform: translate(-50%, -50%);
-   /*background-color: white;*/
-   padding: 5px;
-   border-radius: 8px;
-   box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-   z-index: 1000;
+@media (prefers-reduced-motion: reduce) {
+   *,
+   *::before,
+   *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+   }
 }
 
-.confirmation-modal__btn {
-   margin-top: 10px;
-   padding: 10px 20px;
-   border: none;
-   border-radius: 4px;
-   cursor: pointer;
-}
+/* ======================== max-width <= 500 ======================== */
+@media (max-width: 500px) {
+   html,
+   body {
+      height: 100dvh;
+   }
 
-.confirmation-modal__btn:hover {
-   background-color: #f0f0f0;
+   .app {
+      padding: 0;
+      flex-direction: column;
+   }
+
+   .sidebar {
+      width: 100dvi;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      border-right: none;
+      border-bottom: 1px solid var(--border-subtle);
+   }
+
+   .sidebar__header {
+      width: 55%;
+   }
+
+   .sidebar__sync-status {
+      flex: 1;
+   }
+
+   .sidebar__settings {
+      padding-left: 8px;
+      padding-right: 8px;
+      box-sizing: border-box;
+      flex: 1 0 100%;
+   }
+
+   .sidebar__list {
+      --note-h: auto;
+      flex: 1 0 100%;
+      flex-direction: row;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 8px;
+      gap: 8px;
+      scrollbar-width: none;
+   }
+
+   .sidebar__list::-webkit-scrollbar {
+      display: none;
+   }
+
+   .sidebar__list::before {
+      top: 6px;
+      bottom: 6px;
+      left: 0;
+      right: auto;
+      height: auto;
+      width: var(--highlight-w, 0px);
+      border-left: none;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #202027, #17171c);
+      transform: translateX(var(--highlight-x, -100px));
+      transition:
+         transform 0.45s cubic-bezier(0.3, 0.86, 0.3, 1),
+         width 0.45s cubic-bezier(0.3, 0.86, 0.3, 1);
+   }
+
+   .note-item {
+      flex: 0 0 auto;
+      padding: 2px 10px;
+      max-width: 60vw;
+      margin: 0;
+   }
+
+   .note-item.active:hover {
+      background: transparent;
+   }
+
+   .note-panel {
+      border-left: none;
+      padding: 16px;
+   }
+
+   .note-panel__title {
+      font-size: 22px;
+      margin-bottom: 16px;
+   }
+
+   .note-panel__content {
+      font-size: 16px;
+   }
 }

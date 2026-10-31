@@ -68,13 +68,12 @@ function notesApp() {
          }
       },
 
-      // === Create \ Delete ===
+      // === Create \ Delete \ Switch ===
       createNote() {
          const id = crypto.randomUUID();
          const note = { id, title: "", content: "", version: 0, dirty: true };
          this.notes.push(note);
          this.switchNote(id);
-         this.scheduleSync(note);
          this.orderChanged = true;
       },
 
@@ -87,8 +86,11 @@ function notesApp() {
                method: "DELETE",
             });
             if (res.ok) {
+               const prevNoteId =
+                  this.notes.findIndex((n) => n.id === note.id) - 1;
                this.notes = this.notes.filter((n) => n.id !== note.id);
-               this.switchNoteAfterDeletion();
+
+               this.switchNote(this.notes[prevNoteId]?.id);
             } else {
                this.showError("Failed to delete note.");
             }
@@ -99,20 +101,12 @@ function notesApp() {
          this.orderChanged = true;
       },
 
-      // === Switch notes ===
       switchNote(id) {
          this.activeId = id;
          const note = this.activeNote;
          this.activeTitle = note?.title || "";
          this.activeContent = note?.content || "";
-      },
-
-      switchNoteAfterDeletion() {
-         if (this.notes.length === 0) {
-            this.switchNote(null);
-         } else {
-            this.switchNote(this.notes[0].id);
-         }
+         this.updateHighlight();
       },
 
       // === Input ===
@@ -251,16 +245,39 @@ function notesApp() {
          this.draggedId = null;
          if (!fromId || fromId === targetId) return;
 
-         const fromIdx = this.notes.findIndex((note) => note.id == fromId);
-         const toIdx = this.notes.findIndex((note) => note.id == targetId);
+         const fromIdx = this.notes.findIndex((note) => note.id === fromId);
+         const toIdx = this.notes.findIndex((note) => note.id === targetId);
          if (fromIdx === -1 || toIdx === -1) return;
 
          const [moved] = this.notes.splice(fromIdx, 1);
          this.notes.splice(toIdx, 0, moved);
          this.orderChanged = true;
+         this.updateHighlight();
       },
       onDragEnd() {
          this.draggedId = null;
+      },
+
+      // === Highlight ===
+      updateHighlight() {
+         this.$nextTick(() => {
+            const list = document.querySelector(".sidebar__list");
+            if (!list) return;
+            const active = list.querySelector(".note-item.active");
+            list.style.setProperty(
+               "--highlight-y",
+               active ? `${active.offsetTop}px` : "-100px",
+            );
+
+            list.style.setProperty(
+               "--highlight-x",
+               active ? `${active.offsetLeft}px` : "-100px",
+            );
+            list.style.setProperty(
+               "--highlight-w",
+               active ? `${active.offsetWidth}px` : "0px",
+            );
+         });
       },
 
       // === Error modal ===
