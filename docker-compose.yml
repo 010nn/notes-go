@@ -51,7 +51,7 @@ services:
          - DB_SSLMODE=disable
          - PORT=8080
          - JWT_SECRET=${JWT_SECRET}
-         - JWT_ACCESS_EXPIRATION_MINUTE=${JWT_ACCESS_EXPIRATION_MINUTE}
+         - JWT_ACCESS_EXPIRATION_MINUTES=${JWT_ACCESS_EXPIRATION_MINUTES}
       restart: unless-stopped
 
    nginx:

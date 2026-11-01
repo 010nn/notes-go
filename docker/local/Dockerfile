@@ -7,6 +7,8 @@ WORKDIR /root/
 COPY bin/app .
 COPY static/html ./static/html
 
+RUN chmod +x app
+
 CMD ["./app"]
 
 # --- Stage 2: Migration Image ---
@@ -17,5 +19,7 @@ WORKDIR /root/
 
 COPY bin/migration .
 COPY migrations ./migrations
+
+RUN chmod +x migration
 
 CMD ["./migration"]
