@@ -17,3 +17,4 @@ pgdata
 server.crt
 server.key
 certs/
+/bin/
