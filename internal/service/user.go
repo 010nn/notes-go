@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"log"
 	"notes-go/internal/domain"
-	"notes-go/pkg/jwt"
+	"notes-go/internal/transport"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -21,10 +21,10 @@ type userRepository interface {
 // === Service ===
 type UserService struct {
 	repo       userRepository
-	jwtManager *jwt.JWTManager
+	jwtManager *transport.JWTManager
 }
 
-func NewUserService(repo userRepository, jwtManager *jwt.JWTManager) *UserService {
+func NewUserService(repo userRepository, jwtManager *transport.JWTManager) *UserService {
 	return &UserService{
 		repo:       repo,
 		jwtManager: jwtManager,

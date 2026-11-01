@@ -10,7 +10,6 @@ import (
 	"notes-go/internal/service"
 	"notes-go/internal/transport"
 	"notes-go/internal/transport/handler"
-	"notes-go/pkg/jwt"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -44,11 +43,10 @@ func main() {
 		return
 	}
 
-	fileServer := http.FileServer(handler.NewNeuteredFileSystem("./static"))
 	regexUUID := "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
 
 	staticHandler := handler.NewStaticHandler()
-	JWTManager := jwt.NewJWTManager(cfg.JwtSecret, time.Duration(cfg.JwtAccessExpirationMinute)*time.Minute, 0)
+	JWTManager := transport.NewJWTManager(cfg.JwtSecret, time.Duration(cfg.JwtAccessExpirationMinute)*time.Minute, 0)
 
 	// Note
 	noteRepository := postgres.NewNoteRepository(dbPool)
@@ -69,10 +67,11 @@ func main() {
 	r.Use(chimiddleware.Logger)
 
 	// Static files
-	r.Group(func(r chi.Router) {
-		r.Use(middleware.StaticSmartCache)
-		r.Handle("/static/*", http.StripPrefix("/static/", fileServer))
-	})
+	// fileServer := http.FileServer(handler.NewNeuteredFileSystem("./static"))
+	// r.Group(func(r chi.Router) {
+	// 	r.Use(middleware.StaticSmartCache)
+	// 	r.Handle("/static/*", http.StripPrefix("/static/", fileServer))
+	// })
 
 	// API routing
 	r.Route("/api", func(r chi.Router) {
@@ -117,7 +116,7 @@ func main() {
 	}
 
 	slog.Info("Server running on http://127.0.0.1:" + cfg.Port)
-	if err := server.ListenAndServeTLS("server.crt", "server.key"); err != nil {
+	if err := server.ListenAndServe(); err != nil {
 		slog.Error("run server", "err", err)
 		return
 	}

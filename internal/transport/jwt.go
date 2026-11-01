@@ -1,4 +1,4 @@
-package jwt
+package transport
 
 import (
 	"errors"
@@ -26,7 +26,6 @@ func NewJWTManager(secretKey []byte, accessTTL, refreshTTL time.Duration) *JWTMa
 	}
 }
 
-// Генерация пары токенов
 func (m *JWTManager) GenerateTokens(userID string) (string, string, error) {
 	// Access Token
 	accessClaims := Claims{
@@ -57,7 +56,6 @@ func (m *JWTManager) GenerateTokens(userID string) (string, string, error) {
 	return accessToken, refreshToken, nil
 }
 
-// Парсинг и проверка токена
 func (m *JWTManager) Verify(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

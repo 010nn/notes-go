@@ -2,15 +2,14 @@ package transport
 
 import (
 	"net/http"
-	"notes-go/pkg/jwt"
 	"strings"
 )
 
 type Middleware struct {
-	jwtManager *jwt.JWTManager
+	jwtManager *JWTManager
 }
 
-func NewMiddleware(jwtManager *jwt.JWTManager) *Middleware {
+func NewMiddleware(jwtManager *JWTManager) *Middleware {
 	return &Middleware{
 		jwtManager: jwtManager,
 	}

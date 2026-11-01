@@ -9,7 +9,6 @@ import (
 	"notes-go/internal/service"
 	"notes-go/internal/transport"
 	"notes-go/internal/transport/response"
-	"notes-go/pkg/jwt"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -34,10 +33,10 @@ func (req authRequest) Validate(validate *validator.Validate) error {
 type AuthHandler struct {
 	service    *service.UserService
 	validate   *validator.Validate
-	jwtManager *jwt.JWTManager
+	jwtManager *transport.JWTManager
 }
 
-func NewAuthHandler(service *service.UserService, jwtManager *jwt.JWTManager) *AuthHandler {
+func NewAuthHandler(service *service.UserService, jwtManager *transport.JWTManager) *AuthHandler {
 	return &AuthHandler{
 		service:    service,
 		validate:   validator.New(),

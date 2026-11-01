@@ -16,3 +16,4 @@ pgdata
 .zed
 server.crt
 server.key
+certs/

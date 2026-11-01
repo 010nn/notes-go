@@ -1,16 +1,69 @@
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: notes-go-psql
-    restart: always
-    environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - "${DB_PORT}:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+   db:
+      image: postgres:15-alpine
+      restart: always
+      environment:
+         POSTGRES_DB: ${DB_NAME}
+         POSTGRES_USER: ${DB_USER}
+         POSTGRES_PASSWORD: ${DB_PASSWORD}
+      volumes:
+         - pgdata:/var/lib/postgresql/data
+      expose:
+         - "5432"
+      healthcheck:
+         test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+         interval: 5s
+         timeout: 5s
+         retries: 5
+
+   migration:
+      build:
+         context: .
+         target: migration
+      command: ["./migration"]
+      depends_on:
+         db:
+            condition: service_healthy
+      environment:
+         - DB_HOST=db
+         - DB_PORT=5432
+         - DB_USER=${DB_USER}
+         - DB_PASSWORD=${DB_PASSWORD}
+         - DB_NAME=${DB_NAME}
+         - DB_SSLMODE=disable
+
+   app:
+      build:
+         context: .
+         target: app
+      command: ["./app"]
+      depends_on:
+         migration:
+            condition: service_completed_successfully
+      environment:
+         - DB_HOST=db
+         - DB_PORT=5432
+         - DB_USER=${DB_USER}
+         - DB_PASSWORD=${DB_PASSWORD}
+         - DB_NAME=${DB_NAME}
+         - DB_SSLMODE=disable
+         - PORT=8080
+         - JWT_SECRET=${JWT_SECRET}
+         - JWT_ACCESS_EXPIRATION_MINUTE=${JWT_ACCESS_EXPIRATION_MINUTE}
+      restart: unless-stopped
+
+   nginx:
+      image: nginx:alpine
+      ports:
+         - "${NGINX_HTTP_PORT:-80}:80"
+         - "${NGINX_HTTPS_PORT:-443}:443"
+      volumes:
+         - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+         - ./nginx/certs:/etc/nginx/certs:ro
+         - ./static:/var/www/static:ro
+      depends_on:
+         - app
+      restart: unless-stopped
 
 volumes:
    pgdata:
