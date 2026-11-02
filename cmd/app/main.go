@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"notes-go/internal/config"
-	"notes-go/internal/repository/postgres"
+	"notes-go/internal/repository"
 	"notes-go/internal/service"
 	"notes-go/internal/transport"
 	"notes-go/internal/transport/handler"
@@ -49,12 +49,12 @@ func main() {
 	JWTManager := transport.NewJWTManager(cfg.JwtSecret, time.Duration(cfg.JwtAccessExpirationMinute)*time.Minute, 0)
 
 	// Note
-	noteRepository := postgres.NewNoteRepository(dbPool)
+	noteRepository := repository.NewNoteRepository(dbPool)
 	noteService := service.NewNoteService(noteRepository)
 	notesHandler := handler.NewNotesHandler(noteService)
 
 	// Auth
-	userRepository := postgres.NewUserRepository(dbPool)
+	userRepository := repository.NewUserRepository(dbPool)
 	userService := service.NewUserService(userRepository, JWTManager)
 	authHandler := handler.NewAuthHandler(userService, JWTManager)
 

@@ -92,7 +92,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Value:    token,
 		Expires:  time.Now().Add(h.jwtManager.AccessTTL),
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   true,
 		Path:     "/",
 		SameSite: http.SameSiteStrictMode,
 	})
@@ -152,7 +152,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Value:    token,
 		Expires:  time.Now().Add(h.jwtManager.AccessTTL),
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   true,
 		Path:     "/",
 		SameSite: http.SameSiteStrictMode,
 	})
