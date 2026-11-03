@@ -8,9 +8,9 @@ Self-hosted notes app with **end-to-end encryption**. The server never sees your
 
 ---
 
-## What is it
+## 🗒️ What is it
 
-`notes-go` is a small, self-hosted note-taking web app written in Go. It's designed for a single user (or a few trusted users) who want their notes stored on their own server — **encrypted at rest with a key only the browser knows**.
+`notes-go` is a small, self-hosted note-taking web app written in Go.
 
 - Notes are encrypted in the browser with **AES-256-GCM** before being sent to the server.
 - The encryption key is derived from the user's password with **PBKDF2-SHA256** and a per-user salt, and kept **only in `sessionStorage`**.
@@ -33,7 +33,7 @@ The backend is a JSON API + static file server, fronted by nginx. Postgres is us
 
 ---
 
-## Screenshots
+## 📸 Screenshots
 
 | Login | Notes |
 |-------|-------|
@@ -41,39 +41,12 @@ The backend is a JSON API + static file server, fronted by nginx. Postgres is us
 
 ---
 
-## Architecture
-
-```
-┌──────────┐      HTTPS       ┌────────────┐      HTTP       ┌──────────┐
-│  Browser │ ───────────────▶ │   nginx    │ ──────────────▶ │   app    │
-│ (crypto) │ ◀─────────────── │ (TLS, /api)│ ◀────────────── │  :8080   │
-└──────────┘                  └────────────┘                 └────┬─────┘
-                                                                  │
-                                                          ┌───────▼────────┐
-                                                          │   PostgreSQL   │
-                                                          │      :5432     │
-                                                          └────────────────┘
-                                                                  ▲
-                                                          ┌───────┴────────┐
-                                                          │   migration    │
-                                                          │  (goose, one-  │
-                                                          │   shot job)    │
-                                                          └────────────────┘
-```
-
-- **nginx** terminates TLS, serves `/static/*` directly, and proxies `/api/*` and page routes to `app`.
-- **app** is the Go HTTP server (`cmd/app`). It handles auth, notes CRUD, and serves HTML pages.
-- **migration** is a one-shot container (`cmd/migration`) that runs goose migrations before the app starts. `app` waits for it via `depends_on: service_completed_successfully`.
-- **db** is PostgreSQL 15 with a persistent named volume (`pgdata`).
-
----
-
-## Quick start
+## 🚀 Quick start
 
 ### Prerequisites
 
-- Docker + Docker Compose v2
-- TLS certificates for nginx (self-signed is fine for local use)
+- Docker Compose
+- TLS certificates for nginx
 
 ### 1. Configure environment
 
@@ -90,17 +63,18 @@ GO_PORT=8080
 JWT_SECRET=a-long-random-string
 JWT_ACCESS_EXPIRATION_MINUTES=15
 
-# Build strategy: "compile" (build Go inside Docker) or "local" (use ./bin/*)
-BUILD_STRATEGY=compile
-
 # nginx
 NGINX_HTTP_PORT=80
 NGINX_HTTPS_PORT=443
+HOST_CERTS_DIR = ./nginx/certs/
+
+# Build strategy: "compile" (build Go inside Docker) or "local" (use ./bin/app & ./bin/migration)
+BUILD_STRATEGY=compile
 ```
 
 ### 2. TLS certificates
 
-Place your certificate and key in `nginx/certs/` and reference them in `nginx/nginx.conf`.
+Place the certificate and key in the `nginx/certs/` directory, naming them `fullchain.pem` and `privkey.pem`.
 
 ### 3. Bring it up
 
@@ -110,11 +84,9 @@ docker compose up -d --build
 
 Open `https://localhost` (or your configured host).
 
-> ⚠️ **First-run note:** the app has no password recovery. Losing the password means losing access to encrypted notes.
-
 ---
 
-## Security model
+## 🔒 Security model
 
 This is the part that matters most, so here's exactly what happens:
 
@@ -169,7 +141,16 @@ Schema is managed with [goose](https://github.com/pressly/goose). Migrations liv
 
 ---
 
-## Project structure
+## Architecture
+
+- **nginx** terminates TLS, serves `/static/*` directly, and proxies `/api/*` and page routes to `app`.
+- **app** is the Go HTTP server (`cmd/app`). It handles auth, notes CRUD, and serves HTML pages.
+- **migration** is a one-shot container (`cmd/migration`) that runs goose migrations before the app starts. `app` waits for it via `depends_on: service_completed_successfully`.
+- **db** is PostgreSQL 15 with a persistent named volume (`pgdata`).
+
+---
+
+## 📁 Project structure
 
 ```
 cmd/
@@ -191,44 +172,3 @@ static/
   html/         # auth.html, notes.html
   js/           # frontend (Alpine.js + Web Crypto API)
 ```
-
-**Frontend** is plain JavaScript + [Alpine.js](https://alpinejs.dev/).
-
----
-
-## Deployment
-
-### Build strategies
-
-The compose file selects a Dockerfile via `BUILD_STRATEGY`:
-
-- **`BUILD_STRATEGY=compile`** (default for normal servers)
-  Multi-stage build: compiles Go inside Docker, produces small runtime images for `app` and `migration`.
-  ```bash
-  docker compose up -d --build
-  ```
-
-- **`BUILD_STRATEGY=local`** (for low-power servers)
-  Skips compilation. You build the binaries elsewhere (or on the host) and place them in `bin/`:
-  ```bash
-  go build -o bin/app       ./cmd/app
-  go build -o bin/migration ./cmd/migration
-  BUILD_STRATEGY=local docker compose up -d --build
-  ```
-  This is useful when the target machine can't handle a Go toolchain — e.g. a small VPS or ARM SBC.
-
-> `bin/` is in `.gitignore`; nothing pre-built is committed.
-
-### nginx
-
-nginx is the public entry point:
-
-- Terminates TLS (certs in `nginx/certs/`)
-- Serves `/static/*` from `./static` (read-only mount)
-- Proxies `/api/*` and page routes to `app:8080`
-
-Config lives in `nginx/nginx.conf`. Point `NGINX_HTTP_PORT` / `NGINX_HTTPS_PORT` at whatever host ports you need.
-
-### Volumes
-
-- `pgdata` — Postgres data directory. Back this up if you care about the ciphertext (you still need the passwords to read it).

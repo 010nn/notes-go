@@ -32,7 +32,7 @@ func Load() (*Config, error) {
 			Name:     getEnv("DB_NAME", ""),
 		},
 
-		Port:                      getEnv("GO_PORT", "8080"),
+		Port:                      getEnv("APP_PORT", "8080"),
 		JwtSecret:                 []byte(getEnv("JWT_SECRET", "key")),
 		JwtAccessExpirationMinute: getEnvAsInt("JWT_ACCESS_EXPIRATION_MINUTES", 15),
 	}
