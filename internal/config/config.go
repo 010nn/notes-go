@@ -12,6 +12,7 @@ type Config struct {
 	Port                      string
 	JwtSecret                 []byte
 	JwtAccessExpirationMinute int
+	FileServer                bool
 }
 
 type DBConfig struct {
@@ -35,6 +36,7 @@ func Load() (*Config, error) {
 		Port:                      getEnv("APP_PORT", "8080"),
 		JwtSecret:                 []byte(getEnv("JWT_SECRET", "key")),
 		JwtAccessExpirationMinute: getEnvAsInt("JWT_ACCESS_EXPIRATION_MINUTES", 15),
+		FileServer:                getEnvAsBool("FILE_SERVER", false),
 	}
 
 	return cfg, nil

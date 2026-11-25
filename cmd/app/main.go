@@ -67,11 +67,13 @@ func main() {
 	r.Use(chimiddleware.Logger)
 
 	// Static files
-	// fileServer := http.FileServer(handler.NewNeuteredFileSystem("./static"))
-	// r.Group(func(r chi.Router) {
-	// 	r.Use(middleware.StaticSmartCache)
-	// 	r.Handle("/static/*", http.StripPrefix("/static/", fileServer))
-	// })
+	if cfg.FileServer {
+		fileServer := http.FileServer(handler.NewNeuteredFileSystem("./static"))
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.StaticSmartCache)
+			r.Handle("/static/*", http.StripPrefix("/static/", fileServer))
+		})
+	}
 
 	// API routing
 	r.Route("/api", func(r chi.Router) {

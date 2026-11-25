@@ -71,7 +71,7 @@ export async function restoreNotesKey() {
 }
 
 export async function encryptNote(note, notesKey) {
-   if (!notesKey) throw "No key";
+   if (!notesKey) throw new CryptoError("No key");
 
    const payload = JSON.stringify({
       title: note.title,

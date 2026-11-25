@@ -77,9 +77,18 @@
         <div class="error-modal__box">
           <h3 class="error-modal__title">error</h3>
           <p class="error-modal__text" x-text="errorMessage"></p>
-          <button class="error-modal__btn" @click="showErrorModal = false">
-            ok
-          </button>
+          <div class="error-modal__actions">
+            <button class="error-modal__btn" @click="showErrorModal = false">
+              ok
+            </button>
+            <button
+              class="error-modal__btn"
+              x-show="errorMessage.startsWith('Sync')"
+              @click="retrySync(); showErrorModal = false;"
+            >
+              retry
+            </button>
+          </div>
         </div>
       </div>
 

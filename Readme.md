@@ -57,19 +57,21 @@ Create a `.env` file in the project root:
 DB_NAME=notes
 DB_USER=notes
 DB_PASSWORD=password
+DB_PORT = 5125 # for backend debugging
+FILE_SERVER = true # for backend debugging
 
 # App
-GO_PORT=8080
 JWT_SECRET=a-long-random-string
 JWT_ACCESS_EXPIRATION_MINUTES=15
+APP_PORT = 8598 # for backend debugging
 
 # nginx
 NGINX_HTTP_PORT=80
 NGINX_HTTPS_PORT=443
 HOST_CERTS_DIR = ./nginx/certs/
 
-# Build strategy: "compile" (build Go inside Docker) or "local" (use ./bin/app & ./bin/migration)
-BUILD_STRATEGY=compile
+# Docker
+BUILD_STRATEGY = compile # "compile" (build Go inside Docker) or "local" (use ./bin/app & ./bin/migration)
 ```
 
 ### 2. TLS certificates

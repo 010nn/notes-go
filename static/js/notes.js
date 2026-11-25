@@ -151,12 +151,27 @@ function notesApp() {
                note.version = data.version;
                note.dirty = false;
                this.updateSyncStatus();
+            } else if (res.status === 409) {
+               this.showError(
+                  "Sync conflict: this note was changed elsewhere. Reload to overwrite.",
+               );
             } else {
-               this.syncStatus = "Sync Failed";
+               this.showError(
+                  "Sync failed: " + res.status + " " + res.statusText,
+               );
             }
          } catch (e) {
-            this.syncStatus = "Sync Failed";
+            this.showError("Sync failed: " + (e?.message ?? e));
          }
+      },
+
+      async retrySync() {
+         for (const note of this.notes) {
+            if (note.dirty) {
+               await this.syncNote(note);
+            }
+         }
+         this.updateSyncStatus();
       },
 
       async syncOrder() {
