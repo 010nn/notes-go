@@ -52,33 +52,31 @@ The backend is a JSON API + static file server, fronted by nginx. Postgres is us
 
 Create a `.env` file in the project root:
 
-```dotenv
+```bash
 # Database
-DB_NAME=notes
-DB_USER=notes
-DB_PASSWORD=password
-DB_PORT = 5125 # for backend debugging
-FILE_SERVER = true # for backend debugging
+DB_NAME = notes
+DB_USER = notes
+DB_PASSWORD = password
+DB_PORT = 5432 # for backend debugging
+FILE_SERVER = false # for backend debugging
 
 # App
-JWT_SECRET=a-long-random-string
-JWT_ACCESS_EXPIRATION_MINUTES=15
-APP_PORT = 8598 # for backend debugging
+JWT_SECRET = a-long-random-string
+JWT_ACCESS_EXPIRATION_MINUTES = 15
+APP_PORT = 8080 # for backend debugging
 
 # nginx
-NGINX_HTTP_PORT=80
-NGINX_HTTPS_PORT=443
+NGINX_HTTP_PORT = 80
+NGINX_HTTPS_PORT = 443
 HOST_CERTS_DIR = ./nginx/certs/
+SSL_CERT_FILE = cert.pem
+SSL_KEY_FILE = key.pem
 
 # Docker
 BUILD_STRATEGY = compile # "compile" (build Go inside Docker) or "local" (use ./bin/app & ./bin/migration)
 ```
 
-### 2. TLS certificates
-
-Place the certificate and key in the `nginx/certs/` directory, naming them `fullchain.pem` and `privkey.pem`.
-
-### 3. Bring it up
+### 2. Bring it up
 
 ```bash
 docker compose up -d --build

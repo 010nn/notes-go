@@ -59,8 +59,12 @@ services:
       ports:
          - "${NGINX_HTTP_PORT:-80}:80"
          - "${NGINX_HTTPS_PORT:-443}:443"
+      environment:
+         - SSL_CERT_FILE=${SSL_CERT_FILE:-fullchain.pem}
+         - SSL_KEY_FILE=${SSL_KEY_FILE:-privkey.pem}
+         - NGINX_ENVSUBST_FILTER=^(SSL_CERT_FILE|SSL_KEY_FILE)$
       volumes:
-         - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+         - ./nginx/nginx.conf:/etc/nginx/templates/default.conf.template:ro
          - ${HOST_CERTS_DIR}:/etc/nginx/ssl:ro
          - ./static:/var/www/static:ro
       depends_on:

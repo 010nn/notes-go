@@ -18,3 +18,5 @@ server.crt
 server.key
 *.pem
 /bin/
+docker-compose.override.yml
+nginx/certs/
